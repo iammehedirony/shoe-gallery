@@ -32,8 +32,8 @@ export default function InventoryPage() {
       </div>
 
       {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-x-auto">
+        <table className="w-full text-left min-w-[700px]">
           <thead className="bg-gray-50 text-ink/70">
             <tr>
               <th className="p-4">Product Title</th>

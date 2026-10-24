@@ -18,12 +18,28 @@ const womenCategories: NavChild[] = [
   { label: "Formal", href: "#ladies-collection", icon: "formal" },
 ];
 
+const accessoriesCategories: NavChild[] = [
+  { label: "Bags", href: "#", icon: "casual" },
+  { label: "Wallets", href: "#", icon: "formal" },
+  { label: "Belts", href: "#", icon: "loafer" },
+];
+
+const footwearCategories: NavChild[] = [
+  { label: "Running", href: "#", icon: "sports" },
+  { label: "Casual", href: "#", icon: "casual" },
+];
+
+const boysCategories: NavChild[] = [
+  { label: "School Shoes", href: "#", icon: "formal" },
+  { label: "Sneakers", href: "#", icon: "sports" },
+];
+
 export const navLinks: NavLink[] = [
   { label: "Men", href: "#mens-collection", active: true, children: menCategories },
   { label: "Women", href: "#ladies-collection", children: womenCategories },
-  { label: "Accessories", href: "#best-selling" },
-  { label: "Footwear", href: "#mens-loafer" },
-  { label: "Boys", href: "#new-arrival" },
+  { label: "Accessories", href: "#best-selling", children: accessoriesCategories },
+  { label: "Footwear", href: "#mens-loafer", children: footwearCategories },
+  { label: "Boys", href: "#new-arrival", children: boysCategories },
 ];
 
 export const policyLinks = [

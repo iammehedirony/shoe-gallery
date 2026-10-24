@@ -9,8 +9,8 @@ export default function CustomersPage() {
     <div>
       <h1 className="text-2xl font-bold mb-8">Customers Management</h1>
       
-      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-x-auto">
+        <table className="w-full text-left min-w-[600px]">
           <thead className="bg-gray-50 text-ink/70">
             <tr>
               <th className="p-4">Customer Name</th>

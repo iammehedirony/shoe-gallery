@@ -21,7 +21,7 @@ export default function Footer() {
               About Us
             </h2>
             <p className="mt-4 max-w-sm text-[12.5px] leading-6 text-ink/55">
-              RICHKID is a premium leather shoes and fashion accessories brand in
+              JH SHOE GALLERY is a premium leather shoes and fashion accessories brand in
               Bangladesh. We deliver quality footwear, thoughtful design and everyday
               comfort for ladies and gents.
             </p>
@@ -102,7 +102,7 @@ export default function Footer() {
 
       <div className="bg-[#2b0a10] py-3.5">
         <p className="text-center text-[10px] tracking-[0.08em] text-white/65 sm:text-[11px]">
-          Copyright 2026 Richkid Bangladesh
+          Copyright 2026 JH SHOE GALLERY. All rights reserved.
         </p>
       </div>
     </footer>

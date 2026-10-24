@@ -14,6 +14,16 @@ export default function AddProductPage() {
         <input type="number" placeholder="Stock Quantity *" className="border p-3 rounded" required />
         <textarea placeholder="Description" className="border p-3 rounded col-span-2 h-32"></textarea>
         <div className="col-span-2">
+            <label className="block mb-2 font-semibold">Select Tags</label>
+            <div className="flex flex-wrap gap-4">
+                {["Best Selling", "New Arrival", "Hot Deal", "Featured"].map(tag => (
+                    <label key={tag} className="flex items-center gap-2">
+                        <input type="checkbox" className="w-4 h-4" /> {tag}
+                    </label>
+                ))}
+            </div>
+        </div>
+        <div className="col-span-2">
             <label className="block mb-2 font-semibold">Upload Images</label>
             <input type="file" multiple className="border p-3 rounded w-full" />
         </div>

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RICHKID Bangladesh | Premium Shoes & Lifestyle",
+  title: "JH SHOE GALLERY | Premium Shoes & Lifestyle",
   description:
-    "Shop premium leather shoes, sneakers, loafers and accessories for men and women at RICHKID Bangladesh.",
+    "Shop premium leather shoes, sneakers, loafers and accessories for men and women at JH SHOE GALLERY.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

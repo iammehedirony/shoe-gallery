@@ -9,8 +9,8 @@ export default function OrdersPage() {
     <div>
       <h1 className="text-2xl font-bold mb-8">Orders Management</h1>
       
-      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-white rounded-lg shadow-sm border border-black/10 overflow-x-auto">
+        <table className="w-full text-left min-w-[800px]">
           <thead className="bg-gray-50 text-ink/70">
             <tr>
               <th className="p-4">Order ID</th>
