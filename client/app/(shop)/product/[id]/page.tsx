@@ -16,11 +16,14 @@ const allProducts = [
   ...ladiesCollectionProducts,
 ];
 
+export async function generateStaticParams() {
+  return allProducts.map((product) => ({
+    id: product.id,
+  }));
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-
   const { id } = await params;
-  
-
   const product = allProducts.find((p) => p.id === id);
 
   if (!product) {

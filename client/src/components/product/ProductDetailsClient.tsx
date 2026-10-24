@@ -5,7 +5,7 @@ import Image from "next/image";
 import { formatPrice } from "@/src/lib/format";
 
 export default function ProductDetailsClient({ product }: { product: any }) {
-  const [mainImage, setMainImage] = useState(product.images[0] || "");
+  const [mainImage, setMainImage] = useState(product.images?.[0] || product.image || "");
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "additional" | "reviews">("description");
@@ -19,7 +19,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
         {/* Left: Image Gallery */}
         <div className="flex gap-4">
           <div className="flex flex-col gap-2">
-            {product.images.map((img: string, i: number) => (
+            {(product.images || [product.image]).map((img: string, i: number) => (
               <button key={i} onClick={() => setMainImage(img)} className="h-20 w-20 overflow-hidden rounded border border-black/10">
                 <Image src={img} alt="Thumbnail" width={80} height={80} className="h-full w-full object-cover" />
               </button>
