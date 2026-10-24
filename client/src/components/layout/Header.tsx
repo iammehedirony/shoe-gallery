@@ -3,27 +3,22 @@
 import Link from "next/link";
 import { useState } from "react";
 import { navLinks } from "@/src/data/navigation";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "@/src/components/ui/Icons";
+import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon, ChevronDownIcon } from "@/src/components/ui/Icons";
+import Image from "next/image";
 
 const CART_COUNT = 0;
 
 export function SiteLogo({ className = "" }: { className?: string }) {
   return (
     <span className={`relative inline-flex items-center ${className}`}>
-      <span className="-skew-x-12 font-logo text-[24px] leading-none tracking-[-0.05em] text-brand sm:text-[28px]">
-        RICHKID
-      </span>
-      <span aria-hidden="true" className="ml-1 flex flex-col gap-[3px]">
-        <span className="block h-[3px] w-3 -skew-x-12 rounded-full bg-brand" />
-        <span className="block h-[3px] w-2 -skew-x-12 rounded-full bg-brand" />
-        <span className="block h-[3px] w-1 -skew-x-12 rounded-full bg-brand" />
-      </span>
+      <Image src="/logo.png" alt="RICHKID Logo" width={100} height={35} className="h-auto w-auto" />
     </span>
   );
 }
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
   const closeMobile = () => setMobileOpen(false);
 
@@ -36,18 +31,40 @@ export default function Header() {
 
         <nav aria-label="Main navigation" className="hidden items-center gap-7 lg:flex">
           {navLinks.map((link) => (
-            <Link
+            <div
               key={link.label}
-              href={link.href}
-              className={`relative py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors hover:text-brand ${
-                link.active ? "text-brand" : "text-ink/75"
-              }`}
+              className="relative py-2"
+              onMouseEnter={() => setHoveredMenu(link.label)}
+              onMouseLeave={() => setHoveredMenu(null)}
             >
-              {link.label}
-              {link.active ? (
-                <span className="absolute inset-x-0 -bottom-0.5 mx-auto h-[2px] w-4 rounded-full bg-brand" />
-              ) : null}
-            </Link>
+              <Link
+                href={link.href}
+                className={`flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors hover:text-brand ${
+                  link.active ? "text-brand" : "text-ink/75"
+                }`}
+              >
+                {link.label}
+                {link.children && <ChevronDownIcon className="h-3 w-3" />}
+                {link.active ? (
+                  <span className="absolute inset-x-0 -bottom-0.5 mx-auto h-[2px] w-4 rounded-full bg-brand" />
+                ) : null}
+              </Link>
+              {link.children && hoveredMenu === link.label && (
+                <div className="absolute left-0 top-full w-48 rounded-lg bg-white p-2 shadow-lg border border-black/5">
+                  {link.children.map((child) => (
+                    <Link
+                      key={child.label}
+                      href={child.href}
+                      className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-ink/70 hover:bg-gray-50 hover:text-brand"
+                    >
+                      {/* Placeholder for icon - you'd need a mapping function here */}
+                      <span className="w-5 h-5 bg-gray-200 rounded-full"></span>
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
 
