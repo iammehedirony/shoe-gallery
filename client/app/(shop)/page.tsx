@@ -15,8 +15,6 @@ import {
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
-
       <main className="flex-1">
         <h1 className="sr-only">
           RICHKID Bangladesh — premium shoes, sneakers and accessories
@@ -60,8 +58,6 @@ export default function Home() {
           showShopAll
         />
       </main>
-
-      <Footer />
       <ScrollToTop />
     </div>
   );

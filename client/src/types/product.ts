@@ -4,11 +4,16 @@ export interface Product {
   id: string;
   title: string;
   image: string;
+  images: string[];
   price: number;
   oldPrice: number;
   discount: number;
   sizes: string[];
   badge?: ProductBadge;
+  sku: string;
+  categories: string[];
+  tags: string[];
+  description: string;
 }
 
 export interface HeroSlide {
