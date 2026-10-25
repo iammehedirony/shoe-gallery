@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import AdminSidebar from "@/src/components/admin/AdminSidebar";
 import AdminHeader from "@/src/components/admin/AdminHeader";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isLoginPage = pathname === "/admin/login";
+  const isAuthenticated = true; 
 
-  if (isLoginPage) {
-    return <>{children}</>;
+  if (!isAuthenticated) {
+    return children;
   }
 
   return (

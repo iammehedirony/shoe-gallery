@@ -1,6 +1,86 @@
-import Link from "next/link";
+"use client";
 
-export default function DashboardPage() {
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+
+export default function AdminPage() {
+  const isAuthenticated = true;
+
+  return (
+    <div>
+      {isAuthenticated ? (
+        <DashboardPage />
+      ) : (
+        <LoginPage />
+      )}
+    </div>
+  );
+
+  
+}
+
+const LoginPage = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+    const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // এখানে আপনার ব্যাকএন্ড অথেনটিকেশন লজিক এবং রোল চেকিং বসবে
+    // উদাহরণ: if (email === 'admin@richkid.com' && password === 'admin123') ...
+    if (email === "admin" && password === "admin") {
+      // রোল চেক করার পর রিডাইরেক্ট হবে
+      router.push("/admin/dashboard");
+    } else {
+      setError("Invalid credentials or unauthorized access.");
+    }
+  };
+  return (
+        <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-sm border border-black/10">
+        <div className="mb-8 text-center">
+            <Image src="/logo.png" alt="RICHKID Logo" width={120} height={40} className="mx-auto" />
+            <h1 className="mt-4 text-xl font-bold text-ink">Admin Login</h1>
+        </div>
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Admin Email/Username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded border border-black/10 px-4 py-3 outline-none focus:border-brand"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded border border-black/10 px-4 py-3 outline-none focus:border-brand"
+            required
+          />
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <button
+            type="submit"
+            className="w-full rounded bg-brand py-3 font-bold text-white transition hover:opacity-90"
+          >
+            LOG IN
+          </button>
+        </form>
+      </div>
+    </main>
+  )
+}
+
+
+function DashboardPage() {
   const stats = [
     { label: "Total Sales", value: "৳1,250,000" },
     { label: "Total Orders", value: "450" },

@@ -1,0 +1,275 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------- USER & AUTH ----------------
+enum Role {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  password  String
+  role      Role      @default(CUSTOMER)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+  cart      Cart?
+  reviews   Review[]
+
+  @@map("users")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String
+  phone      String
+  street     String
+  city       String   // e.g. "Dhaka"
+  district   String?
+  country    String   @default("Bangladesh")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  orders     Order[]
+
+  @@map("addresses")
+}
+
+// ---------------- CATALOG & PRODUCTS ----------------
+enum ProductBadge {
+  FRESH_STOCK
+  NEW_IN
+  HOT
+  LIMITED
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  icon        String?   // e.g. "boot", "loafer", "casual", "sports"
+  image       String?
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+
+  @@map("tags")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  title       String
+  slug        String        @unique
+  sku         String?       @unique
+  description String?       @db.Text
+  price       Decimal       @db.Decimal(10, 2)
+  oldPrice    Decimal?      @db.Decimal(10, 2)
+  discount    Int           @default(0) // Percentage
+  badge       ProductBadge?
+  image       String        // Primary thumbnail
+  images      String[]      // Additional gallery images
+  isPublished Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Shoe Variations (Sizes & Stock)
+  variants    ProductVariant[]
+
+  // Relations
+  categoryId  String?
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags        Tag[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  reviews     Review[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@map("products")
+}
+
+// Size-wise inventory
+model ProductVariant {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size       String   // e.g. "38", "39", "40", "41", "42"
+  stock      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([productId, size])
+  @@map("product_variants")
+}
+
+// ---------------- CART SYSTEM ----------------
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String          @id @default(uuid())
+  cartId    String
+  cart      Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  size      String          // Selected size
+  quantity  Int             @default(1)
+
+  createdAt DateTime        @default(now())
+
+  @@map("cart_items")
+}
+
+// ---------------- ORDER & CHECKOUT ----------------
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  COD             // Cash on Delivery
+  BKASH
+  NAGAD
+  CARD
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  orderNumber     String        @unique // e.g. "JHG-123456"
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Shipping info (Supports guest & registered checkout)
+  customerName    String
+  customerPhone   String
+  shippingCity    String
+  shippingAddress String
+  orderNotes      String?
+
+  subtotal        Decimal       @db.Decimal(10, 2)
+  shippingFee     Decimal       @default(60.00) @db.Decimal(10, 2)
+  discountTotal   Decimal       @default(0.00) @db.Decimal(10, 2)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod @default(COD)
+  paymentStatus   PaymentStatus @default(UNPAID)
+  transactionId   String?
+
+  items           OrderItem[]
+  addressId       String?
+  address         Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([orderNumber])
+  @@index([customerPhone])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String          @id @default(uuid())
+  orderId    String
+  order      Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId  String?
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  
+  title      String
+  size       String
+  unitPrice  Decimal         @db.Decimal(10, 2)
+  quantity   Int
+  totalPrice Decimal         @db.Decimal(10, 2)
+
+  @@map("order_items")
+}
+
+// ---------------- REVIEWS & CMS ----------------
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(5)
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
+
+enum BannerType {
+  HERO
+  SUB_BANNER
+  PROMO
+}
+
+model Banner {
+  id        String     @id @default(uuid())
+  title     String
+  script    String?    // e.g. "Exclusive Collection"
+  tagline   String?
+  image     String
+  alt       String?
+  link      String?
+  type      BannerType @default(HERO)
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  @@map("banners")
+}
