@@ -222,6 +222,34 @@ const getTags = async (req, res, next) => {
   }
 };
 
+// @desc    Create new tag (Admin)
+// @route   POST /api/v1/admin/tags
+// @access  Private/Admin
+const createTag = async (req, res, next) => {
+  try {
+    const { name, slug } = req.body;
+    const tag = await prisma.tag.create({
+      data: { name, slug },
+    });
+    return ApiResponse.created(res, tag, "Tag created successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete tag
+// @route   DELETE /api/v1/admin/tags/:id
+// @access  Private/Admin
+const deleteTag = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.tag.delete({ where: { id } });
+    return ApiResponse.success(res, null, "Tag deleted successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductByIdOrSlug,
@@ -229,4 +257,6 @@ module.exports = {
   createCategory,
   deleteCategory,
   getTags,
+  createTag,
+  deleteTag,
 };

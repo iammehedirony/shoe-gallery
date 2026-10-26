@@ -31,6 +31,10 @@ router.delete("/products/:id", adminController.deleteProduct);
 router.post("/categories", adminController.createCategory);
 router.delete("/categories/:id", adminController.deleteCategory);
 
+// Tag Management
+router.post("/tags", adminController.createTag);
+router.delete("/tags/:id", adminController.deleteTag);
+
 // CMS Banners Management
 router.get("/cms/banners", adminController.getBanners);
 router.post("/cms/banners", adminController.createBanner);

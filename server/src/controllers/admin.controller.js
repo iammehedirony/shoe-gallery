@@ -108,7 +108,7 @@ const updatePaymentStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Get inventory stock table
+// @desc    Get inventory stock table & stats
 // @route   GET /api/v1/admin/inventory
 // @access  Private/Admin
 const getInventory = async (req, res, next) => {
@@ -120,7 +120,33 @@ const getInventory = async (req, res, next) => {
       orderBy: { product: { title: "asc" } },
     });
 
-    return ApiResponse.success(res, variants, "Inventory retrieved successfully");
+    const totalProducts = await prisma.product.count();
+    let outOfStockCount = 0;
+    let lowStockCount = 0;
+    let totalInventoryValue = 0;
+
+    variants.forEach((v) => {
+      if (v.stock === 0) {
+        outOfStockCount++;
+      } else if (v.stock <= 5) {
+        lowStockCount++;
+      }
+      totalInventoryValue += Number(v.product.price) * v.stock;
+    });
+
+    return ApiResponse.success(
+      res,
+      {
+        variants,
+        stats: {
+          totalProducts,
+          outOfStockCount,
+          lowStockCount,
+          totalInventoryValue,
+        },
+      },
+      "Inventory retrieved successfully"
+    );
   } catch (error) {
     next(error);
   }
@@ -176,12 +202,15 @@ const getCustomers = async (req, res, next) => {
   }
 };
 
-// @desc    Create new product with variants
+// @desc    Create new product with variants, tags, and flash sale
 // @route   POST /api/v1/admin/products
 // @access  Private/Admin
 const createProduct = async (req, res, next) => {
   try {
-    const { title, slug, sku, description, price, oldPrice, discount, badge, image, images, categoryId, variants } = req.body;
+    const { 
+      title, slug, sku, description, price, oldPrice, discount, badge, 
+      image, images, categoryId, tagIds, isFlashSale, flashSaleStartTime, flashSaleEndTime, variants 
+    } = req.body;
 
     const product = await prisma.product.create({
       data: {
@@ -193,9 +222,13 @@ const createProduct = async (req, res, next) => {
         oldPrice,
         discount,
         badge,
+        isFlashSale: isFlashSale || false,
+        flashSaleStartTime: flashSaleStartTime ? new Date(flashSaleStartTime) : null,
+        flashSaleEndTime: flashSaleEndTime ? new Date(flashSaleEndTime) : null,
         image,
         images: images || [image],
         categoryId,
+        tags: tagIds && tagIds.length > 0 ? { connect: tagIds.map((id) => ({ id })) } : undefined,
         variants: {
           create: variants.map((v) => ({
             size: v.size,
@@ -206,10 +239,11 @@ const createProduct = async (req, res, next) => {
       include: {
         variants: true,
         category: true,
+        tags: true,
       },
     });
 
-    return ApiResponse.created(res, product, "Product created successfully");
+    return ApiResponse.created(res, product, "Product created successfully with tags & flash sale info");
   } catch (error) {
     next(error);
   }
@@ -250,6 +284,8 @@ module.exports = {
   deleteProduct,
   createCategory: productController.createCategory,
   deleteCategory: productController.deleteCategory,
+  createTag: productController.createTag,
+  deleteTag: productController.deleteTag,
   getBanners: cmsController.getBanners,
   createBanner: cmsController.createBanner,
   deleteBanner: cmsController.deleteBanner,

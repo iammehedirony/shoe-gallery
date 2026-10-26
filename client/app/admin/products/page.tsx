@@ -71,6 +71,17 @@ export default function ProductsPage() {
                 <input type="number" placeholder="Stock Quantity *" className="border p-3 rounded" required />
                 <textarea placeholder="Description" className="border p-3 rounded col-span-2 h-32"></textarea>
                 
+                <div className="col-span-2">
+                    <label className="block mb-2 font-semibold">Select Sizes</label>
+                    <div className="flex flex-wrap gap-4">
+                        {["37", "38", "39", "40", "41", "42", "43", "44"].map(size => (
+                            <label key={size} className="flex items-center gap-2">
+                                <input type="checkbox" className="w-4 h-4" /> Size {size}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="col-span-2 flex items-center gap-4 border p-3 rounded">
                     <label className="flex items-center gap-2 font-semibold">
                         <input type="checkbox" className="w-4 h-4" /> Is Flash Sale Product?

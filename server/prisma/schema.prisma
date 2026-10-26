@@ -99,6 +99,12 @@ model Product {
   oldPrice    Decimal?      @db.Decimal(10, 2)
   discount    Int           @default(0) // Percentage
   badge       ProductBadge?
+
+  // Flash Sale fields
+  isFlashSale         Boolean   @default(false)
+  flashSaleStartTime  DateTime?
+  flashSaleEndTime    DateTime?
+
   image       String        // Primary thumbnail
   images      String[]      // Additional gallery images
   isPublished Boolean       @default(true)

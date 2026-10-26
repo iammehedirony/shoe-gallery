@@ -27,11 +27,18 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
       
       <nav className="flex-1 px-4 py-4 flex flex-col gap-2 overflow-y-auto">
         {menuItems.map((item) => {
-          const isActive = pathname === `/admin${item.href}`;
+          // সম্পুর্ণ পাথ তৈরি করা
+          const fullHref = item.href === "/" ? "/admin" : `/admin${item.href}`;
+          
+          // অ্যাক্টিভ চেক করার সুনির্দিষ্ট লজিক
+          const isActive = item.href === "/" 
+            ? pathname === "/admin" || pathname === "/admin/"
+            : pathname.startsWith(fullHref);
+
           return (
             <Link
               key={item.label}
-              href={`/admin${item.href}`}
+              href={fullHref}
               onClick={onClose}
               className={`px-4 py-3 rounded-lg transition-colors font-medium ${
                 isActive ? "bg-brand text-white" : "hover:bg-gray-800 text-gray-300"
