@@ -66,6 +66,12 @@ model Category {
   icon        String?   // e.g. "boot", "loafer", "casual", "sports"
   image       String?
   description String?
+  
+  // Subcategory self-relation
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
