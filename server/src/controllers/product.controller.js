@@ -7,7 +7,9 @@ const ApiResponse = require("../utils/apiResponse");
 // @access  Public
 const getProducts = async (req, res, next) => {
   try {
-    const { page, limit, search, category, tag, badge, minPrice, maxPrice, size, sort } = req.query;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 12;
+    const { search, category, tag, badge, minPrice, maxPrice, size, sort } = req.query;
 
     const skip = (page - 1) * limit;
 
@@ -222,6 +224,21 @@ const getTags = async (req, res, next) => {
   }
 };
 
+// @desc    Get all badges
+// @route   GET /api/v1/products/badges
+// @access  Public
+const getBadges = async (req, res, next) => {
+  try {
+    const badges = await prisma.badge.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return ApiResponse.success(res, badges, "Badges retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Create new tag (Admin)
 // @route   POST /api/v1/admin/tags
 // @access  Private/Admin
@@ -257,6 +274,7 @@ module.exports = {
   createCategory,
   deleteCategory,
   getTags,
+  getBadges,
   createTag,
   deleteTag,
 };

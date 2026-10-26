@@ -7,6 +7,7 @@ const { productQuerySchema } = require("../validations/product.validation");
 router.get("/", validate(productQuerySchema), productController.getProducts);
 router.get("/categories", productController.getCategories);
 router.get("/tags", productController.getTags);
+router.get("/badges", productController.getBadges);
 router.get("/cms/banners", require("../controllers/cms.controller").getBanners);
 router.get("/:identifier", productController.getProductByIdOrSlug);
 

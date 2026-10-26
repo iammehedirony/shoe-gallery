@@ -269,6 +269,46 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+// @desc    Create new badge (Admin)
+// @route   POST /api/v1/admin/badges
+// @access  Private/Admin
+const createBadge = async (req, res, next) => {
+  try {
+    const { name, slug, color } = req.body;
+    const badge = await prisma.badge.create({
+      data: {
+        name,
+        slug,
+        color: color || "bg-gray-100 text-gray-700",
+      },
+    });
+
+    return ApiResponse.created(res, badge, "Badge created successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete badge (Admin)
+// @route   DELETE /api/v1/admin/badges/:id
+// @access  Private/Admin
+const deleteBadge = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const badge = await prisma.badge.findUnique({ where: { id } });
+    if (!badge) {
+      throw ApiError.notFound("Badge not found");
+    }
+
+    await prisma.badge.delete({ where: { id } });
+
+    return ApiResponse.success(res, null, "Badge deleted successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 const productController = require("./product.controller");
 const cmsController = require("./cms.controller");
 
@@ -286,6 +326,8 @@ module.exports = {
   deleteCategory: productController.deleteCategory,
   createTag: productController.createTag,
   deleteTag: productController.deleteTag,
+  createBadge,
+  deleteBadge,
   getBanners: cmsController.getBanners,
   createBanner: cmsController.createBanner,
   deleteBanner: cmsController.deleteBanner,

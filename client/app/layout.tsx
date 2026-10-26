@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { QueryProvider } from "@/src/lib/query/query-client";
 
 export const metadata: Metadata = {
   title: "JH SHOE GALLERY | Premium Shoes & Lifestyle",
@@ -11,7 +12,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col bg-white text-ink">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

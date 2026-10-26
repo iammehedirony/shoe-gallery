@@ -35,9 +35,16 @@ router.delete("/categories/:id", adminController.deleteCategory);
 router.post("/tags", adminController.createTag);
 router.delete("/tags/:id", adminController.deleteTag);
 
+// Badge Management
+router.post("/badges", adminController.createBadge);
+router.delete("/badges/:id", adminController.deleteBadge);
+
 // CMS Banners Management
 router.get("/cms/banners", adminController.getBanners);
 router.post("/cms/banners", adminController.createBanner);
 router.delete("/cms/banners/:id", adminController.deleteBanner);
+
+// Cloudinary Image Upload Route
+router.use("/upload", require("./upload.routes"));
 
 module.exports = router;

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/src/lib/store/useAuthStore";
 
 const menuItems = [
   { label: "Dashboard", href: "/" },
   { label: "Products", href: "/products" },
   { label: "Categories", href: "/categories" },
-  { label: "Tags", href: "/tags" },
+  { label: "Tags & Badges", href: "/tags-badges" },
   { label: "Inventory", href: "/inventory" },
   { label: "Orders", href: "/orders" },
   { label: "Payments", href: "/payments" },
@@ -17,6 +18,14 @@ const menuItems = [
 
 export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+
+  const handleSignOut = () => {
+    logout();
+    if (onClose) onClose();
+    router.push("/admin");
+  };
   
   return (
     <aside className="w-full lg:w-64 bg-ink text-white h-screen flex flex-col sticky top-0">
@@ -27,10 +36,8 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
       
       <nav className="flex-1 px-4 py-4 flex flex-col gap-2 overflow-y-auto">
         {menuItems.map((item) => {
-          // সম্পুর্ণ পাথ তৈরি করা
           const fullHref = item.href === "/" ? "/admin" : `/admin${item.href}`;
           
-          // অ্যাক্টিভ চেক করার সুনির্দিষ্ট লজিক
           const isActive = item.href === "/" 
             ? pathname === "/admin" || pathname === "/admin/"
             : pathname.startsWith(fullHref);
@@ -51,7 +58,10 @@ export default function AdminSidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       <div className="p-4 border-t border-gray-800 shrink-0">
-        <button className="w-full px-4 py-3 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40 transition-colors font-semibold">
+        <button
+          onClick={handleSignOut}
+          className="w-full px-4 py-3 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40 transition-colors font-semibold"
+        >
           Sign Out
         </button>
       </div>
