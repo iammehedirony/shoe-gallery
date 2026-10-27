@@ -209,6 +209,38 @@ const deleteCategory = async (req, res, next) => {
   }
 };
 
+// @desc    Update category or subcategory (Admin)
+// @route   PATCH /api/v1/admin/categories/:id
+// @access  Private/Admin
+const updateCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, slug, icon, image, description, parentId } = req.body;
+
+    const category = await prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw ApiError.notFound("Category not found");
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+        icon,
+        image,
+        description,
+        parentId: parentId !== undefined ? (parentId || null) : category.parentId,
+      },
+      include: { parent: true, children: true },
+    });
+
+    return ApiResponse.success(res, updatedCategory, "Category updated successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get all tags
 // @route   GET /api/v1/tags
 // @access  Public
@@ -272,6 +304,7 @@ module.exports = {
   getProductByIdOrSlug,
   getCategories,
   createCategory,
+  updateCategory,
   deleteCategory,
   getTags,
   getBadges,

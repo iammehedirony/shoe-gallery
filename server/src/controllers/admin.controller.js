@@ -192,11 +192,57 @@ const getCustomers = async (req, res, next) => {
         isActive: true,
         createdAt: true,
         _count: { select: { orders: true } },
+        orders: { select: { totalAmount: true, paymentStatus: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
     return ApiResponse.success(res, customers, "Customers retrieved successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update customer
+// @route   PATCH /api/v1/admin/customers/:id
+// @access  Private/Admin
+const updateCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, isActive } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw ApiError.notFound("Customer not found");
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { name, email, phone, isActive },
+      select: { id: true, name: true, email: true, phone: true, isActive: true },
+    });
+
+    return ApiResponse.success(res, updatedUser, "Customer updated successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete customer
+// @route   DELETE /api/v1/admin/customers/:id
+// @access  Private/Admin
+const deleteCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw ApiError.notFound("Customer not found");
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    return ApiResponse.success(res, null, "Customer deleted successfully");
   } catch (error) {
     next(error);
   }
@@ -320,9 +366,12 @@ module.exports = {
   getInventory,
   updateStock,
   getCustomers,
+  updateCustomer,
+  deleteCustomer,
   createProduct,
   deleteProduct,
   createCategory: productController.createCategory,
+  updateCategory: productController.updateCategory,
   deleteCategory: productController.deleteCategory,
   createTag: productController.createTag,
   deleteTag: productController.deleteTag,

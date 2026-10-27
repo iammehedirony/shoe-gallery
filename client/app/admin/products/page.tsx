@@ -7,6 +7,7 @@ import { useProducts } from "@/src/hooks/queries/useProducts";
 import { useDeleteProduct } from "@/src/hooks/mutations/useDeleteProduct";
 import { useCreateProduct } from "@/src/hooks/mutations/useCreateProduct";
 import { productService } from "@/src/lib/services/product.service";
+import DeleteConfirmModal from "@/src/components/ui/DeleteConfirmModal";
 
 const AVAILABLE_SIZES = ["38", "39", "40", "41", "42", "43", "44"];
 
@@ -21,6 +22,10 @@ export default function ProductsPage() {
   const [badges, setBadges] = useState<any[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{ id: string; title: string } | null>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -208,13 +213,19 @@ export default function ProductsPage() {
 
   const products = responseData?.products || [];
 
-  const handleDelete = async (id: string, prodTitle: string) => {
-    if (window.confirm(`Are you sure you want to delete "${prodTitle}"?`)) {
-      try {
-        await deleteProductMutation.mutateAsync(id);
-      } catch (err: any) {
-        alert(err.message || "Failed to delete product");
-      }
+  const handleDeleteClick = (id: string, prodTitle: string) => {
+    setProductToDelete({ id, title: prodTitle });
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    try {
+      await deleteProductMutation.mutateAsync(productToDelete.id);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete product");
     }
   };
 
@@ -300,9 +311,8 @@ export default function ProductsPage() {
                           Edit
                         </Link>
                         <button 
-                          onClick={() => handleDelete(product.id, product.title)}
-                          disabled={deleteProductMutation.isPending}
-                          className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded hover:bg-red-100 transition disabled:opacity-50"
+                          onClick={() => handleDeleteClick(product.id, product.title)}
+                          className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded hover:bg-red-100 transition"
                         >
                           Delete
                         </button>
@@ -315,6 +325,17 @@ export default function ProductsPage() {
           </table>
         )}
       </div>
+
+      {/* Universal Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        title="Delete Product"
+        message="Are you sure you want to delete product"
+        itemName={productToDelete?.title}
+        isLoading={deleteProductMutation.isPending}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteModalOpen(false)}
+      />
 
       {/* Add Product Modal */}
       {isModalOpen && (

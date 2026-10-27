@@ -4,11 +4,14 @@ const ApiResponse = require("../utils/apiResponse");
 
 // @desc    Get all banners (Hero & Sub Banners)
 // @route   GET /api/v1/cms/banners
-// @access  Public
+// @access  Public/Admin
 const getBanners = async (req, res, next) => {
   try {
-    const { type } = req.query; // 'HERO' or 'SUB_BANNER'
-    const where = { isActive: true };
+    const { type, all } = req.query; // 'HERO' or 'SUB_BANNER'
+    const where = {};
+    if (req.user?.role !== "ADMIN" && all !== "true") {
+      where.isActive = true;
+    }
     if (type) {
       where.type = type.toUpperCase();
     }

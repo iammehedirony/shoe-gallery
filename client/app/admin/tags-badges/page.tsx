@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { productService } from "@/src/lib/services/product.service";
 import { apiClient } from "@/src/lib/api/api.client";
+import DeleteConfirmModal from "@/src/components/ui/DeleteConfirmModal";
 
 export default function TagsAndBadgesPage() {
   const [activeTab, setActiveTab] = useState<"tags" | "badges">("tags");
@@ -16,6 +17,11 @@ export default function TagsAndBadgesPage() {
   const [badges, setBadges] = useState<any[]>([]);
   const [newBadgeName, setNewBadgeName] = useState("");
   const [isLoadingBadges, setIsLoadingBadges] = useState(true);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: "tag" | "badge" } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -58,14 +64,28 @@ export default function TagsAndBadgesPage() {
     }
   };
 
-  const handleDeleteTag = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete tag "${name}"?`)) {
-      try {
-        await apiClient.delete(`/admin/tags/${id}`);
+  const handleDeleteClick = (id: string, name: string, type: "tag" | "badge") => {
+    setItemToDelete({ id, name, type });
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      if (itemToDelete.type === "tag") {
+        await apiClient.delete(`/admin/tags/${itemToDelete.id}`);
         fetchTags();
-      } catch (err: any) {
-        alert(err.message || "Failed to delete tag");
+      } else {
+        await apiClient.delete(`/admin/badges/${itemToDelete.id}`);
+        fetchBadges();
       }
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
+    } catch (err: any) {
+      alert(err.message || `Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -80,17 +100,6 @@ export default function TagsAndBadgesPage() {
       fetchBadges();
     } catch (err: any) {
       alert(err.message || "Failed to create badge");
-    }
-  };
-
-  const handleDeleteBadge = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete badge "${name}"?`)) {
-      try {
-        await apiClient.delete(`/admin/badges/${id}`);
-        fetchBadges();
-      } catch (err: any) {
-        alert(err.message || "Failed to delete badge");
-      }
     }
   };
 
@@ -120,6 +129,17 @@ export default function TagsAndBadgesPage() {
           </button>
         </div>
       </div>
+
+      {/* Universal Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        title={`Delete ${itemToDelete?.type === "tag" ? "Tag" : "Badge"}`}
+        message={`Are you sure you want to delete ${itemToDelete?.type}`}
+        itemName={itemToDelete?.name}
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteModalOpen(false)}
+      />
 
       {activeTab === "tags" ? (
         <div>
@@ -161,7 +181,7 @@ export default function TagsAndBadgesPage() {
                       <td className="p-4 text-ink/60 font-mono">{tag.slug}</td>
                       <td className="p-4">
                         <button 
-                          onClick={() => handleDeleteTag(tag.id, tag.name)}
+                          onClick={() => handleDeleteClick(tag.id, tag.name, "tag")}
                           className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded hover:bg-red-100 transition"
                         >
                           Delete
@@ -220,7 +240,7 @@ export default function TagsAndBadgesPage() {
                       </td>
                       <td className="p-4">
                         <button 
-                          onClick={() => handleDeleteBadge(badge.id, badge.name)}
+                          onClick={() => handleDeleteClick(badge.id, badge.name, "badge")}
                           className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded hover:bg-red-100 transition"
                         >
                           Delete

@@ -23,12 +23,15 @@ router.get("/inventory", adminController.getInventory);
 router.patch("/inventory/:variantId", validate(updateStockSchema), adminController.updateStock);
 
 router.get("/customers", adminController.getCustomers);
+router.patch("/customers/:id", adminController.updateCustomer);
+router.delete("/customers/:id", adminController.deleteCustomer);
 
 router.post("/products", validate(createProductSchema), adminController.createProduct);
 router.delete("/products/:id", adminController.deleteProduct);
 
 // Category & Subcategory Management
 router.post("/categories", adminController.createCategory);
+router.patch("/categories/:id", adminController.updateCategory);
 router.delete("/categories/:id", adminController.deleteCategory);
 
 // Tag Management
