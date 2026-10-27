@@ -213,6 +213,73 @@ const addAddress = async (req, res, next) => {
   }
 };
 
+// @desc    Update user address
+// @route   PUT /api/v1/auth/addresses/:id
+// @access  Private
+const updateAddress = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { fullName, phone, street, city, district, country, isDefault } = req.body;
+
+    const existingAddress = await prisma.address.findUnique({
+      where: { id },
+    });
+
+    if (!existingAddress || existingAddress.userId !== req.user.id) {
+      throw ApiError.notFound("Address not found");
+    }
+
+    if (isDefault) {
+      await prisma.address.updateMany({
+        where: { userId: req.user.id },
+        data: { isDefault: false },
+      });
+    }
+
+    const updatedAddress = await prisma.address.update({
+      where: { id },
+      data: {
+        fullName,
+        phone,
+        street,
+        city,
+        district,
+        country: country || "Bangladesh",
+        isDefault: isDefault ?? existingAddress.isDefault,
+      },
+    });
+
+    return ApiResponse.success(res, updatedAddress, "Address updated successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete user address
+// @route   DELETE /api/v1/auth/addresses/:id
+// @access  Private
+const deleteAddress = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const existingAddress = await prisma.address.findUnique({
+      where: { id },
+    });
+
+    if (!existingAddress || existingAddress.userId !== req.user.id) {
+      throw ApiError.notFound("Address not found");
+    }
+
+    await prisma.address.delete({
+      where: { id },
+    });
+
+    return ApiResponse.success(res, null, "Address deleted successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -221,4 +288,6 @@ module.exports = {
   changePassword,
   getAddresses,
   addAddress,
+  updateAddress,
+  deleteAddress,
 };

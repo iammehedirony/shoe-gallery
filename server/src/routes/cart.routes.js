@@ -10,6 +10,7 @@ router.use(verifyToken);
 
 router.get("/", cartController.getCart);
 router.post("/items", validate(addToCartSchema), cartController.addToCart);
+router.post("/sync", cartController.syncCart);
 router.patch("/items/:itemId", validate(updateCartItemSchema), cartController.updateCartItem);
 router.delete("/items/:itemId", cartController.removeCartItem);
 router.delete("/clear", cartController.clearCart);

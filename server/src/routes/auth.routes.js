@@ -21,5 +21,7 @@ router.post("/change-password", verifyToken, validate(changePasswordSchema), aut
 
 router.get("/addresses", verifyToken, authController.getAddresses);
 router.post("/addresses", verifyToken, validate(addressSchema), authController.addAddress);
+router.put("/addresses/:id", verifyToken, validate(addressSchema), authController.updateAddress);
+router.delete("/addresses/:id", verifyToken, authController.deleteAddress);
 
 module.exports = router;

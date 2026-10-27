@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { authService, type RegisterInput } from "@/src/lib/services/auth.service";
 import { useAuthStore } from "@/src/store/authStore";
+import { useCartStore } from "@/src/store/cartStore";
 
 const inputClass =
   "w-full rounded border border-black/10 px-4 py-3 outline-none focus:border-brand transition";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const syncCartWithBackend = useCartStore((state) => state.syncCartWithBackend);
 
   const [formData, setFormData] = useState<RegisterInput>({
     name: "",
@@ -25,9 +28,11 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setAuth(data.user, data.token);
-      router.push("/account");
+      await syncCartWithBackend();
+      const redirectTo = searchParams.get("redirect") || "/account";
+      router.push(redirectTo);
     },
     onError: (error: Error) => {
       setError(error.message || "Registration failed. Please try again.");
@@ -38,7 +43,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    // Validation
     if (!formData.name || !formData.email || !formData.password || !formData.phone) {
       setError("All fields are required");
       return;
@@ -173,5 +177,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12">Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

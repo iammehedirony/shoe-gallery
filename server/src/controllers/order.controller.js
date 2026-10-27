@@ -22,11 +22,15 @@ const calculateShipping = async (req, res, next) => {
 // @access  Public / Private (supports guest and logged-in users)
 const createOrder = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, shippingCity, shippingAddress, orderNotes, paymentMethod, items } = req.body;
+    const { customerName, customerPhone, shippingCity, shippingAddress, orderNotes, paymentMethod, transactionId, items } = req.body;
     const userId = req.user?.id || null;
 
     if (!items || items.length === 0) {
       throw ApiError.badRequest("No items provided in order");
+    }
+
+    if (paymentMethod === "BKASH" && !transactionId) {
+      throw ApiError.badRequest("Transaction ID (TrxID) is required for bKash payment");
     }
 
     // Execute order placement inside a Prisma Interactive Transaction
@@ -94,6 +98,7 @@ const createOrder = async (req, res, next) => {
           totalAmount,
           paymentMethod: paymentMethod || "COD",
           paymentStatus: paymentMethod === "COD" ? "UNPAID" : "PAID", // Assuming online payment is paid instantly
+          transactionId: paymentMethod === "BKASH" ? transactionId : null,
           items: {
             create: orderItemsData,
           },

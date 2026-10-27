@@ -343,6 +343,56 @@ const deleteTag = async (req, res, next) => {
   }
 };
 
+// @desc    Add product review
+// @route   POST /api/v1/products/:id/reviews
+// @access  Private
+const addReview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.user.id;
+
+    const product = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product || !product.isPublished) {
+      throw ApiError.notFound("Product not found");
+    }
+
+    const existingReview = await prisma.review.findFirst({
+      where: { productId: id, userId },
+    });
+
+    let review;
+    if (existingReview) {
+      review = await prisma.review.update({
+        where: { id: existingReview.id },
+        data: { rating, comment },
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      });
+    } else {
+      review = await prisma.review.create({
+        data: {
+          productId: id,
+          userId,
+          rating,
+          comment,
+        },
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      });
+    }
+
+    return ApiResponse.created(res, review, "Review submitted successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductByIdOrSlug,
@@ -354,4 +404,5 @@ module.exports = {
   getBadges,
   createTag,
   deleteTag,
+  addReview,
 };

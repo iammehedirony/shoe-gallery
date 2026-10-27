@@ -79,4 +79,9 @@ export const productService = {
     const res: any = await apiClient.delete<any>(`/admin/products/${id}`);
     return res?.data || res;
   },
+
+  addReview: async (productId: string, data: { rating: number; comment?: string }) => {
+    const res: any = await apiClient.post<any>(`/products/${productId}/reviews`, data);
+    return res?.data || res;
+  },
 };

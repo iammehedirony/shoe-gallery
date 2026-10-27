@@ -15,6 +15,14 @@ const productQuerySchema = z.object({
   }),
 });
 
+const reviewSchema = z.object({
+  body: z.object({
+    rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating cannot exceed 5"),
+    comment: z.string().min(2, "Comment must be at least 2 characters long").optional(),
+  }),
+});
+
 module.exports = {
   productQuerySchema,
+  reviewSchema,
 };

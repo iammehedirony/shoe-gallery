@@ -68,6 +68,16 @@ export const authService = {
     return res?.data || res;
   },
 
+  updateAddress: async (id: string, data: AddressInput) => {
+    const res: any = await apiClient.put(`/auth/addresses/${id}`, data);
+    return res?.data || res;
+  },
+
+  deleteAddress: async (id: string) => {
+    const res: any = await apiClient.delete(`/auth/addresses/${id}`);
+    return res?.data || res;
+  },
+
   logout: () => {
     // Clear token from storage
     if (typeof window !== "undefined") {

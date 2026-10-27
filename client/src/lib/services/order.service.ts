@@ -31,6 +31,11 @@ export interface AdminOrder {
 }
 
 export const orderService = {
+  getMyOrders: async (): Promise<AdminOrder[]> => {
+    const res = await apiClient.get<any>("/orders/my-orders");
+    return res.data;
+  },
+
   getAdminOrders: async (): Promise<AdminOrder[]> => {
     const res = await apiClient.get<any>("/admin/orders");
     return res.data;

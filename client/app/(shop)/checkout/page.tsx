@@ -1,84 +1,386 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useCartStore } from "@/src/store/cartStore";
+import { useAuthStore } from "@/src/store/authStore";
+import { authService } from "@/src/lib/services/auth.service";
+import { useToast } from "@/src/contexts/ToastContext";
 import { formatPrice } from "@/src/lib/format";
+import { apiClient } from "@/src/lib/api/api.client";
 
 export default function CheckoutPage() {
-  const [shipping, setShipping] = useState(60);
-  const [quantity, setQuantity] = useState(1);
-  const price = 1750;
+  const router = useRouter();
+  const { items, clearCart } = useCartStore();
+  const { user, token } = useAuthStore();
+  const { showToast } = useToast();
 
-  const handleIncrement = () => setQuantity((prev) => prev + 1);
-  const handleDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const [shippingCity, setShippingCity] = useState("Dhaka");
+  const shippingFee = shippingCity.trim().toLowerCase() === "dhaka" ? 60 : 120;
 
-  const subtotal = price * quantity;
+  const [formData, setFormData] = useState({
+    customerName: user?.name || "",
+    customerPhone: user?.phone || "",
+    shippingAddress: "",
+    orderNotes: "",
+    paymentMethod: "COD",
+    transactionId: "",
+  });
+
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const { data: addressesResponse } = useQuery({
+    queryKey: ["user-addresses"],
+    queryFn: authService.getAddresses,
+    enabled: !!token,
+  });
+
+  const savedAddresses = addressesResponse?.data || addressesResponse || [];
+
+  const handleSavedAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const addressId = e.target.value;
+    setSelectedAddressId(addressId);
+    if (!addressId) return;
+
+    const addr = savedAddresses.find((a: any) => a.id === addressId);
+    if (addr) {
+      setFormData((prev) => ({
+        ...prev,
+        customerName: addr.fullName,
+        customerPhone: addr.phone,
+        shippingAddress: addr.street,
+      }));
+      if (addr.city) {
+        setShippingCity(addr.city);
+      }
+    }
+  };
+
+  const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const totalAmount = subtotal + shippingFee;
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setShippingCity(e.target.value);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (items.length === 0) {
+      setError("Your cart is empty");
+      return;
+    }
+
+    if (!formData.customerName || !formData.customerPhone || !formData.shippingAddress || !shippingCity) {
+      setError("Please fill in all required billing and shipping fields");
+      return;
+    }
+
+    if (formData.paymentMethod === "BKASH" && !formData.transactionId.trim()) {
+      setError("Please enter the bKash Transaction ID (TrxID)");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        shippingCity,
+        shippingAddress: formData.shippingAddress,
+        orderNotes: formData.orderNotes,
+        paymentMethod: formData.paymentMethod,
+        transactionId: formData.paymentMethod === "BKASH" ? formData.transactionId : undefined,
+        items: items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          size: item.selectedSize,
+          quantity: item.quantity,
+        })),
+      };
+
+      const res: any = await apiClient.post("/orders/checkout", payload);
+
+      // If user is logged in, check if this address is already saved; if not, save it automatically
+      if (token && formData.shippingAddress) {
+        const addressExists = savedAddresses.some(
+          (a: any) => a.street.toLowerCase() === formData.shippingAddress.toLowerCase() && a.city.toLowerCase() === shippingCity.toLowerCase()
+        );
+        if (!addressExists) {
+          try {
+            await authService.addAddress({
+              fullName: formData.customerName,
+              phone: formData.customerPhone,
+              street: formData.shippingAddress,
+              city: shippingCity,
+              district: shippingCity,
+              country: "Bangladesh",
+              isDefault: savedAddresses.length === 0,
+            });
+          } catch (addrErr) {
+            console.error("Failed to auto-save address", addrErr);
+          }
+        }
+      }
+
+      setIsSuccess(true);
+      await clearCart();
+      const order = res?.data || res;
+      showToast("Order placed successfully!");
+      router.push(`/order-success?orderNumber=${order?.orderNumber || "Confirmed"}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to place order. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
+  if (items.length === 0 && !isSuccess) {
+    return (
+      <main className="container mx-auto px-4 py-16 text-center max-w-xl">
+        <h1 className="text-2xl font-bold text-ink mb-4">Your Cart is Empty</h1>
+        <p className="text-muted mb-6">Add products to your cart before proceeding to checkout.</p>
+        <button
+          onClick={() => router.push("/shop")}
+          className="bg-brand text-white px-6 py-3 rounded-xl font-bold hover:bg-brand-dark transition"
+        >
+          Go to Shop
+        </button>
+      </main>
+    );
+  }
 
   return (
-    <main className="container mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-        {/* Left: Cart & Billing */}
+    <main className="container mx-auto px-4 py-12 max-w-[1240px]">
+      <div className="flex gap-4 mb-12 font-bold text-sm sm:text-base text-ink/40">
+        <Link href="/cart" className="hover:text-ink">SHOPPING CART</Link>
+        <span>{">"}</span>
+        <span className="text-ink">CHECKOUT DETAILS</span>
+        <span>{">"}</span>
+        <span>ORDER COMPLETE</span>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+        {/* Left: Billing & Shipping */}
         <div className="lg:col-span-2">
-          {/* Cart Items Table */}
-          <div className="mb-8">
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-8 text-sm font-bold uppercase mb-4 text-ink border-b border-black/10 pb-4 items-center">
-              <span>PRODUCT</span> <span className="text-center">PRICE</span> <span className="text-center">QUANTITY</span> <span className="text-right">SUBTOTAL</span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-8 items-center py-4 border-b border-black/10">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                  <Image src="/images/products/06.jpg" alt="Product" width={64} height={64} className="object-cover h-full w-full" />
-                </div>
-                <p className="text-sm">Graceland Super Durable Slip-On Shoes Full Black - Size/38</p>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-ink">Billing & Shipping Information</h2>
+            {token && savedAddresses.length > 0 && (
+              <div className="w-64">
+                <select
+                  value={selectedAddressId}
+                  onChange={handleSavedAddressSelect}
+                  className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:border-brand bg-white font-medium"
+                >
+                  <option value="">📌 Select Saved Address...</option>
+                  {savedAddresses.map((addr: any) => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.fullName} ({addr.street}, {addr.city})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <span className="text-sm text-center">{formatPrice(price)}</span>
-              <div className="flex items-center border border-black/20 rounded px-2 py-1 text-center justify-center">
-                <button onClick={handleDecrement} className="px-2">-</button>
-                <span className="px-3 font-semibold">{quantity}</span>
-                <button onClick={handleIncrement} className="px-2">+</button>
-              </div>
-              <span className="text-sm font-bold text-right">{formatPrice(subtotal)}</span>
-            </div>
+            )}
           </div>
 
-          {/* Billing Form */}
-          <h2 className="text-xl font-bold mb-6">BILLING & SHIPPING</h2>
-          <form className="grid gap-4">
-            <input type="text" placeholder="Full Name *" className="border p-3 rounded" />
-            <input type="text" placeholder="Phone *" className="border p-3 rounded" />
-            <input type="text" placeholder="Address *" className="border p-3 rounded" />
-            <select className="border p-3 rounded"><option>Dhaka</option></select>
-            <input type="text" value="Bangladesh" disabled className="border p-3 rounded bg-gray-50" />
-            <textarea placeholder="Order Notes (optional)" className="border p-3 rounded h-32"></textarea>
-          </form>
+          <div className="space-y-4 bg-white p-6 rounded-2xl border border-black/5 shadow-xs">
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Full Name *</label>
+              <input
+                type="text"
+                name="customerName"
+                required
+                value={formData.customerName}
+                onChange={handleChange}
+                placeholder="Your Full Name"
+                className="w-full border border-gray-300 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Phone Number *</label>
+              <input
+                type="text"
+                name="customerPhone"
+                required
+                value={formData.customerPhone}
+                onChange={handleChange}
+                placeholder="017xxxxxxxx"
+                className="w-full border border-gray-300 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">City / Delivery Area *</label>
+                <select
+                  value={shippingCity}
+                  onChange={handleCityChange}
+                  className="w-full border border-gray-300 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand bg-white"
+                >
+                  <option value="Dhaka">Dhaka (60৳ Delivery)</option>
+                  <option value="Outside Dhaka">Outside Dhaka (120৳ Delivery)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Country</label>
+                <input
+                  type="text"
+                  value="Bangladesh"
+                  disabled
+                  className="w-full border border-gray-200 rounded-xl p-3.5 text-sm bg-gray-50 text-muted"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Street Address / House / Area *</label>
+              <input
+                type="text"
+                name="shippingAddress"
+                required
+                value={formData.shippingAddress}
+                onChange={handleChange}
+                placeholder="House no, Road no, Area, Thana"
+                className="w-full border border-gray-300 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Payment Method</label>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {[
+                  { id: "COD", label: "Cash on Delivery" },
+                  { id: "BKASH", label: "bKash Payment" },
+                ].map((method) => (
+                  <label
+                    key={method.id}
+                    className={`flex items-center justify-center p-3.5 rounded-xl border text-sm font-bold cursor-pointer transition ${
+                      formData.paymentMethod === method.id
+                        ? "border-brand bg-brand/5 text-brand"
+                        : "border-gray-200 text-ink hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.id}
+                      checked={formData.paymentMethod === method.id}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    {method.label}
+                  </label>
+                ))}
+              </div>
+
+              {formData.paymentMethod === "BKASH" && (
+                <div className="p-4 rounded-xl bg-pink-50 border border-pink-200 space-y-3 mt-3">
+                  <div className="text-xs text-pink-900 font-medium leading-relaxed">
+                    <p className="font-bold mb-1">📱 bKash Merchant / Personal Number:</p>
+                    <p className="font-mono text-sm font-bold bg-white px-3 py-1.5 rounded border border-pink-200 w-fit">
+                      01712-345678 (Personal / Send Money)
+                    </p>
+                    <p className="mt-2">
+                      Please send <span className="font-bold">{formatPrice(totalAmount)}</span> to this bKash number using 'Send Money', then enter your Transaction ID (TrxID) below.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-pink-900 mb-1">Transaction ID (TrxID) *</label>
+                    <input
+                      type="text"
+                      name="transactionId"
+                      required={formData.paymentMethod === "BKASH"}
+                      value={formData.transactionId}
+                      onChange={handleChange}
+                      placeholder="e.g. 9H74K82L1M"
+                      className="w-full border border-pink-300 rounded-lg p-2.5 text-sm font-mono bg-white focus:outline-none focus:border-brand uppercase"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Order Notes (Optional)</label>
+              <textarea
+                name="orderNotes"
+                value={formData.orderNotes}
+                onChange={handleChange}
+                placeholder="Notes about your order, e.g. special delivery instructions"
+                rows={3}
+                className="w-full border border-gray-300 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand"
+              ></textarea>
+            </div>
+          </div>
         </div>
 
         {/* Right: Order Summary */}
         <div className="lg:col-span-1">
-          <div className="border-2 border-brand rounded-lg p-6">
-            <h2 className="text-xl font-bold mb-4">YOUR ORDER</h2>
-            <div className="flex justify-between font-bold mb-2"><span>Product</span> <span>Subtotal</span></div>
-            <div className="flex justify-between text-sm mb-4"><span>Shoes x {quantity}</span> <span>{formatPrice(subtotal)}</span></div>
-            <div className="flex justify-between font-bold mb-4"><span>Subtotal</span> <span>{formatPrice(subtotal)}</span></div>
+          <div className="border border-black/10 rounded-2xl p-6 bg-white shadow-xs sticky top-8">
+            <h2 className="text-xl font-bold mb-6 text-ink">YOUR ORDER ({items.length})</h2>
             
-            <div className="mb-4">
-              <label className="flex items-center gap-2 mb-2">
-                <input type="radio" name="shipping" checked={shipping === 60} onChange={() => setShipping(60)} />
-                Inside Dhaka City: 60৳
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="shipping" checked={shipping === 100} onChange={() => setShipping(100)} />
-                Outside Dhaka City: 100৳
-              </label>
+            <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-1 divide-y divide-gray-100">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between pt-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 bg-gray-100 rounded-lg overflow-hidden relative border flex-shrink-0">
+                      <Image src={item.image} alt={item.title} fill sizes="48px" className="object-cover" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-ink line-clamp-1">{item.title}</p>
+                      <p className="text-xs text-muted">Size: {item.selectedSize} × {item.quantity}</p>
+                    </div>
+                  </div>
+                  <span className="font-medium text-ink">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
             </div>
-            
-            <div className="flex justify-between text-lg font-bold border-t pt-4">
-              <span>Total</span> <span>{formatPrice(subtotal + shipping)}</span>
+
+            <div className="border-t pt-4 space-y-3 text-sm">
+              <div className="flex justify-between text-muted">
+                <span>Subtotal</span>
+                <span className="font-semibold text-ink">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted">
+                <span>Shipping ({shippingCity})</span>
+                <span className="font-semibold text-ink">{formatPrice(shippingFee)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t pt-4 text-ink">
+                <span>Total Amount</span>
+                <span className="text-brand">{formatPrice(totalAmount)}</span>
+              </div>
             </div>
-            <button className="w-full mt-6 bg-brand text-white py-4 font-bold rounded">PLACE ORDER</button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full mt-6 bg-brand hover:bg-brand-dark text-white py-4 font-bold rounded-xl transition shadow-sm disabled:opacity-50"
+            >
+              {isSubmitting ? "Placing Order..." : "PLACE ORDER"}
+            </button>
           </div>
         </div>
-      </div>
+      </form>
     </main>
   );
 }

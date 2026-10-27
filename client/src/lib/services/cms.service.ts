@@ -14,8 +14,8 @@ export interface Banner {
 }
 
 export const cmsService = {
-  getBanners: async (type?: string): Promise<Banner[]> => {
-    const res = await apiClient.get<any>("/admin/cms/banners", { params: { type, all: "true" } });
+  getBanners: async (type?: string, all?: boolean): Promise<Banner[]> => {
+    const res = await apiClient.get<any>("/cms/banners", { params: { type, all: all ? "true" : undefined } });
     return res?.data || res;
   },
 

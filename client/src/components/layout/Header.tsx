@@ -5,9 +5,9 @@ import { useState, useEffect } from "react";
 import { productService } from "@/src/lib/services/product.service";
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon, ChevronDownIcon } from "@/src/components/ui/Icons";
 import { useAuthStore } from "@/src/store/authStore";
+import { useCartStore } from "@/src/store/cartStore";
+import { useSearchStore } from "@/src/store/searchStore";
 import Image from "next/image";
-
-const CART_COUNT = 0;
 
 export function SiteLogo({ className = "" }: { className?: string }) {
   return (
@@ -22,6 +22,9 @@ export default function Header() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const { user, isAuthenticated } = useAuthStore();
+  const cartItems = useCartStore((state) => state.items);
+  const cartCount = cartItems.length;
+  const openSearch = useSearchStore((state) => state.openSearch);
 
   useEffect(() => {
     async function fetchNavbarCategories() {
@@ -92,6 +95,7 @@ export default function Header() {
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
+            onClick={openSearch}
             aria-label="Search products"
             className="grid h-9 w-9 place-items-center rounded-full text-ink/80 transition-colors hover:bg-blush hover:text-brand"
           >
@@ -106,16 +110,16 @@ export default function Header() {
             <UserIcon className="h-[18px] w-[18px]" />
           </Link>
 
-          <a
-            href="#"
-            aria-label={`Cart, ${CART_COUNT} items`}
+          <Link
+            href="/cart"
+            aria-label={`Cart, ${cartCount} items`}
             className="relative grid h-9 w-9 place-items-center rounded-full text-ink/80 transition-colors hover:bg-blush hover:text-brand"
           >
             <BagIcon className="h-[18px] w-[18px]" />
             <span className="pointer-events-none absolute -right-0.5 -top-0.5 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-brand px-1 text-[9px] font-bold leading-none text-white">
-              {CART_COUNT}
+              {cartCount}
             </span>
-          </a>
+          </Link>
 
           {isAuthenticated ? (
             <Link

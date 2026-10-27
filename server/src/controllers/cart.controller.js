@@ -204,10 +204,69 @@ const clearCart = async (req, res, next) => {
   }
 };
 
+// @desc    Sync guest cart with user cart on login
+// @route   POST /api/v1/cart/sync
+// @access  Private
+const syncCart = async (req, res, next) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      const cart = await getOrCreateUserCart(req.user.id);
+      return ApiResponse.success(res, cart, "Cart retrieved (no sync items)");
+    }
+
+    const cart = await getOrCreateUserCart(req.user.id);
+
+    for (const item of items) {
+      const { productId, variantId, size, quantity } = item;
+      if (!productId || !size || !quantity) continue;
+
+      let targetVariantId = variantId;
+      if (!targetVariantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { productId_size: { productId, size } },
+        });
+        if (variant) targetVariantId = variant.id;
+      }
+
+      const existingItem = await prisma.cartItem.findFirst({
+        where: {
+          cartId: cart.id,
+          productId,
+          size,
+        },
+      });
+
+      if (existingItem) {
+        await prisma.cartItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: existingItem.quantity + quantity },
+        });
+      } else {
+        await prisma.cartItem.create({
+          data: {
+            cartId: cart.id,
+            productId,
+            variantId: targetVariantId,
+            size,
+            quantity: quantity || 1,
+          },
+        });
+      }
+    }
+
+    const updatedCart = await getOrCreateUserCart(req.user.id);
+    return ApiResponse.success(res, updatedCart, "Cart synced successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCart,
   addToCart,
   updateCartItem,
   removeCartItem,
   clearCart,
+  syncCart,
 };

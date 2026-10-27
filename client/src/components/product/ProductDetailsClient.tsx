@@ -3,7 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProductDetail } from "@/src/hooks/queries/useProducts";
+import { productService } from "@/src/lib/services/product.service";
+import { useAuthStore } from "@/src/store/authStore";
+import { useCartStore } from "@/src/store/cartStore";
+import { useToast } from "@/src/contexts/ToastContext";
+import { queryKeys } from "@/src/lib/query/query-keys";
 import { formatPrice } from "@/src/lib/format";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/src/components/ui/Icons";
 
@@ -12,6 +19,11 @@ interface ProductDetailsClientProps {
 }
 
 export default function ProductDetailsClient({ productId }: ProductDetailsClientProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const addToCart = useCartStore((state) => state.addToCart);
+  const { showToast } = useToast();
   const { data: product, isLoading, error } = useProductDetail(productId);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -19,6 +31,39 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
   const [quantity, setQuantity] = useState(1);
   const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "additional" | "reviews">("description");
+
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const addReviewMutation = useMutation({
+    mutationFn: (data: { rating: number; comment?: string }) => productService.addReview(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(productId) });
+      setIsReviewModalOpen(false);
+      setReviewRating(5);
+      setReviewComment("");
+      showToast("Review submitted successfully!");
+    },
+    onError: (err: any) => {
+      showToast(err.message || "Failed to submit review", "error");
+    },
+  });
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addReviewMutation.mutate({ rating: reviewRating, comment: reviewComment });
+  };
+
+  const handleOpenReviewModal = () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setIsReviewModalOpen(true);
+  };
 
   // Loading state
   if (isLoading) {
@@ -53,300 +98,252 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
     );
   }
 
-  const images = product.images && product.images.length > 0 ? product.images : [product.image];
-  const currentImage = images[currentImageIndex];
-
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
-  const handleIncrement = () => setQuantity((prev) => prev + 1);
-  const handleDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-
-  // Get available sizes from variants
-  const availableSizes = product.variants?.filter((v: any) => v.stock > 0).map((v: any) => v.size) || [];
+  const allImages = [product.image, ...(product.images || [])].filter(Boolean);
   const hasReviews = product.reviews && product.reviews.length > 0;
   const averageRating = hasReviews
     ? product.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / product.reviews.length
     : 0;
 
+  const availableSizes = product.variants ? product.variants.map((v: any) => v.size) : [];
+  const selectedVariant = product.variants?.find((v: any) => v.size === selectedSize);
+  const currentStock = selectedVariant ? selectedVariant.stock : 0;
+
+  const handleAddToCart = async () => {
+    if (!selectedSize && availableSizes.length > 0) {
+      showToast("Please select a size", "error");
+      return;
+    }
+
+    try {
+      await addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        title: product.title,
+        price: Number(product.price),
+        oldPrice: product.oldPrice ? Number(product.oldPrice) : undefined,
+        image: allImages[currentImageIndex] || product.image,
+        selectedSize: selectedSize || availableSizes[0] || "Standard",
+        quantity,
+        stock: currentStock,
+      });
+
+      showToast("Product added to cart successfully!");
+    } catch (err: any) {
+      showToast(err.message || "Failed to add to cart", "error");
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!selectedSize && availableSizes.length > 0) {
+      showToast("Please select a size", "error");
+      return;
+    }
+
+    await handleAddToCart();
+    router.push("/checkout");
+  };
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-[1240px]">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-ink/50 mb-6">
-        <Link href="/" className="hover:text-brand">Home</Link>
-        <span>/</span>
-        <Link href="/shop" className="hover:text-brand">Shop</Link>
-        <span>/</span>
-        {product.category && (
-          <>
-            <Link href={`/category/${product.category.slug}`} className="hover:text-brand capitalize">
-              {product.category.name}
-            </Link>
-            <span>/</span>
-          </>
-        )}
-        <span className="text-brand font-medium">{product.title}</span>
-      </div>
+      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted">
+        <ol className="flex items-center space-x-2">
+          <li>
+            <Link href="/" className="hover:text-brand">Home</Link>
+          </li>
+          <li>/</li>
+          <li>
+            <Link href="/shop" className="hover:text-brand">Shop</Link>
+          </li>
+          <li>/</li>
+          <li className="text-ink font-medium truncate">{product.title}</li>
+        </ol>
+      </nav>
 
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-        {/* Left: Image Gallery with Arrows */}
-        <div className="flex gap-4">
-          {/* Thumbnail Column */}
-          <div className="flex flex-col gap-2">
-            {images.map((img: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => setCurrentImageIndex(i)}
-                className={`h-20 w-20 overflow-hidden rounded border transition-all ${
-                  i === currentImageIndex ? "border-brand ring-2 ring-brand/20" : "border-black/10 hover:border-brand/50"
-                }`}
-              >
-                <Image src={img} alt={`Thumbnail ${i + 1}`} width={80} height={80} className="h-full w-full object-cover" />
-              </button>
-            ))}
+        {/* Product Gallery */}
+        <div className="space-y-4">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-gray-100 border border-black/5">
+            <Image
+              src={allImages[currentImageIndex] || product.image}
+              alt={product.title}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+            />
           </div>
 
-          {/* Main Image with Navigation Arrows */}
-          <div className="relative aspect-square flex-1 overflow-hidden rounded-lg bg-blush/30 group">
-            <Image src={currentImage} alt={product.title} fill className="object-cover" priority />
-
-            {/* Navigation Arrows */}
-            {images.length > 1 && (
-              <>
+          {allImages.length > 1 && (
+            <div className="grid grid-cols-4 gap-3">
+              {allImages.map((img: string, idx: number) => (
                 <button
-                  onClick={handlePrevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
-                  aria-label="Previous image"
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
+                    currentImageIndex === idx ? "border-brand" : "border-transparent hover:border-black/20"
+                  }`}
                 >
-                  <ChevronLeftIcon className="w-6 h-6 text-ink" />
+                  <Image src={img} alt="" fill sizes="25vw" className="object-cover" />
                 </button>
-                <button
-                  onClick={handleNextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
-                  aria-label="Next image"
-                >
-                  <ChevronRightIcon className="w-6 h-6 text-ink" />
-                </button>
-
-                {/* Image Counter */}
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-medium">
-                  {currentImageIndex + 1} / {images.length}
-                </div>
-              </>
-            )}
-
-            {/* Badge */}
-            {product.badge && (
-              <div className="absolute top-4 left-4 bg-brand text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
-                {product.badge}
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Right: Product Info */}
-        <div className="flex flex-col">
-          {/* Category & Tags */}
-          <div className="flex items-center gap-2 mb-2">
+        {/* Product Info */}
+        <div className="flex flex-col justify-between">
+          <div>
             {product.category && (
-              <Link
-                href={`/category/${product.category.slug}`}
-                className="text-xs font-semibold uppercase tracking-wider text-muted hover:text-brand"
-              >
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand mb-2 inline-block">
                 {product.category.name}
-              </Link>
+              </span>
             )}
-            {product.tags && product.tags.length > 0 && (
-              <>
-                <span className="text-muted">•</span>
-                {product.tags.slice(0, 2).map((tag: any) => (
-                  <span key={tag.id} className="text-xs bg-blush text-brand px-2 py-0.5 rounded">
-                    {tag.name}
-                  </span>
-                ))}
-              </>
-            )}
-          </div>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-ink mb-3">{product.title}</h1>
 
-          <h1 className="text-3xl font-bold text-ink mb-4">{product.title}</h1>
-
-          {/* Price */}
-          <div className="flex items-baseline gap-4 mb-2">
-            <span className="text-3xl font-bold text-brand">{formatPrice(product.price)}</span>
-            {product.oldPrice && product.oldPrice > product.price && (
-              <>
-                <span className="text-lg font-medium text-muted line-through">{formatPrice(product.oldPrice)}</span>
-                <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
-                  Save {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Rating */}
-          {hasReviews && (
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex">
+            {/* Rating & Reviews summary */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center text-yellow-400">
                 {[...Array(5)].map((_, i) => (
                   <span key={i} className={i < Math.round(averageRating) ? "text-yellow-400" : "text-gray-300"}>
                     ★
                   </span>
                 ))}
               </div>
-              <span className="text-sm text-muted">
-                {averageRating.toFixed(1)} ({product.reviews.length} reviews)
-              </span>
+              <span className="text-sm font-bold text-ink">{averageRating.toFixed(1)}</span>
+              <span className="text-sm text-muted">({product.reviews?.length || 0} reviews)</span>
             </div>
-          )}
 
-          {/* SKU & Stock */}
-          <div className="flex items-center gap-4 text-sm text-muted mb-6 pb-6 border-b border-black/10">
-            <span>SKU: <span className="font-medium text-ink">{product.sku}</span></span>
-            <span>•</span>
-            <span className={`font-medium ${availableSizes.length > 0 ? "text-green-600" : "text-red-600"}`}>
-              {availableSizes.length > 0 ? "In Stock" : "Out of Stock"}
-            </span>
-          </div>
+            {/* Price */}
+            <div className="flex items-baseline gap-3 mb-6">
+              <span className="text-3xl font-black text-ink">{formatPrice(Number(product.price))}</span>
+              {product.oldPrice && Number(product.oldPrice) > Number(product.price) && (
+                <span className="text-lg text-muted line-through">{formatPrice(Number(product.oldPrice))}</span>
+              )}
+              {product.discount > 0 && (
+                <span className="px-2.5 py-0.5 bg-brand/10 text-brand text-xs font-bold rounded">
+                  {product.discount}% OFF
+                </span>
+              )}
+            </div>
 
-          {/* Size Selection */}
-          {availableSizes.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-ink">Select Size</h2>
+            {/* Size Selector */}
+            {availableSizes.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-ink">Select Size (EU):</label>
+                  <button
+                    onClick={() => setIsSizeChartOpen(true)}
+                    className="text-xs font-medium text-brand hover:underline"
+                  >
+                    Size Guide
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((variant: any) => {
+                    const isSelected = selectedSize === variant.size;
+                    const isOutOfStock = variant.stock === 0;
+
+                    return (
+                      <button
+                        key={variant.id}
+                        disabled={isOutOfStock}
+                        onClick={() => setSelectedSize(variant.size)}
+                        className={`px-4 py-2.5 rounded-lg text-sm font-bold border transition ${
+                          isSelected
+                            ? "border-brand bg-brand text-white shadow-sm"
+                            : isOutOfStock
+                            ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed line-through"
+                            : "border-gray-200 hover:border-ink text-ink bg-white"
+                        }`}
+                      >
+                        {variant.size}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedSize && (
+                  <p className="text-xs text-muted mt-2">
+                    Stock available: <span className="font-semibold text-ink">{currentStock} pairs</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Quantity Selector */}
+            <div className="mb-8">
+              <label className="block text-sm font-semibold text-ink mb-2">Quantity:</label>
+              <div className="flex items-center w-32 border border-gray-300 rounded-lg overflow-hidden">
                 <button
-                  onClick={() => setIsSizeChartOpen(true)}
-                  className="text-xs font-semibold text-brand hover:underline flex items-center gap-1"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-ink font-bold transition"
                 >
-                  📐 SIZE CHART
+                  -
+                </button>
+                <span className="flex-1 text-center font-semibold text-ink">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-ink font-bold transition"
+                >
+                  +
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {availableSizes.map((size: string) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`rounded border py-2.5 text-sm font-medium transition-all ${
-                      selectedSize === size
-                        ? "border-brand bg-brand text-white"
-                        : "border-black/15 text-ink hover:border-brand hover:text-brand"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
             </div>
-          )}
 
-          {/* Quantity and Actions */}
-          <div className="flex gap-3 mb-3">
-            <div className="flex items-center rounded border border-black/20">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={handleDecrement}
-                className="px-4 py-3 text-xl font-bold hover:bg-gray-50 transition"
+                onClick={handleAddToCart}
+                className="flex-1 bg-white border-2 border-brand text-brand hover:bg-brand/5 font-bold py-3.5 px-6 rounded-xl transition shadow-sm"
               >
-                −
+                Add to Cart
               </button>
-              <span className="px-6 font-semibold text-lg">{quantity}</span>
               <button
-                onClick={handleIncrement}
-                className="px-4 py-3 text-xl font-bold hover:bg-gray-50 transition"
+                onClick={handleBuyNow}
+                className="flex-1 bg-brand hover:bg-brand-dark text-white font-bold py-3.5 px-6 rounded-xl transition shadow-sm"
               >
-                +
+                Buy Now
               </button>
             </div>
-            <button
-              disabled={availableSizes.length === 0 || !selectedSize}
-              className="flex-1 rounded bg-ink px-8 py-3 font-semibold text-white hover:bg-ink/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ADD TO CART
-            </button>
-          </div>
-
-          <button
-            disabled={availableSizes.length === 0 || !selectedSize}
-            className="w-full rounded bg-brand px-8 py-3 font-semibold text-white hover:bg-brand-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            BUY NOW
-          </button>
-
-          {/* Delivery Info */}
-          <div className="mt-6 bg-blush/50 rounded-lg p-4 text-sm text-ink/80 space-y-2">
-            <p className="flex items-center gap-2">
-              <span className="text-lg">🚚</span>
-              <span>সারাদেশে ২-৫ দিনে হোম-ডেলিভারি</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="text-lg">📦</span>
-              <span>একসাথে যত খুশি পণ্য অর্ডার করুন, ডেলিভারি চার্জ একই থাকবে</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="text-lg">📞</span>
-              <span>প্রয়োজনে কল করুন: <a href="tel:01324250470" className="font-semibold text-brand hover:underline">01324250470</a></span>
-            </p>
           </div>
         </div>
       </div>
 
       {/* Size Chart Modal */}
       {isSizeChartOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setIsSizeChartOpen(false)}>
-          <div className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-black/10 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-ink">Size Chart</h2>
-              <button
-                onClick={() => setIsSizeChartOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition"
-              >
-                <CloseIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              <p className="text-sm text-muted mb-4">
-                Please refer to the size chart below to find your perfect fit. Measurements are in EU sizes.
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setIsSizeChartOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-ink"
+            >
+              <CloseIcon className="h-6 w-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-ink mb-4">Footwear Size Guide</h2>
+            <div className="space-y-4">
+              <p className="text-sm text-muted">
+                Find your perfect fit using our standard European (EU) sizing chart below.
               </p>
-
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="bg-blush/50">
-                      <th className="border border-black/10 px-4 py-3 text-left font-semibold text-ink">Size (EU)</th>
-                      <th className="border border-black/10 px-4 py-3 text-left font-semibold text-ink">UK</th>
-                      <th className="border border-black/10 px-4 py-3 text-left font-semibold text-ink">US</th>
-                      <th className="border border-black/10 px-4 py-3 text-left font-semibold text-ink">Foot Length (cm)</th>
-                      <th className="border border-black/10 px-4 py-3 text-center font-semibold text-ink">Stock</th>
+                    <tr className="border-b bg-gray-50">
+                      <th className="p-3 font-semibold text-ink">EU Size</th>
+                      <th className="p-3 font-semibold text-ink">US Men</th>
+                      <th className="p-3 font-semibold text-ink">Foot Length (cm)</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {product.variants?.map((variant: any) => {
-                      const sizeNum = parseInt(variant.size);
-                      const ukSize = sizeNum - 33;
-                      const usSize = sizeNum - 32;
-                      const footLength = 22 + (sizeNum - 38) * 0.67;
-
-                      return (
-                        <tr key={variant.id} className="hover:bg-gray-50 transition">
-                          <td className="border border-black/10 px-4 py-3 font-medium">{variant.size}</td>
-                          <td className="border border-black/10 px-4 py-3">{ukSize}</td>
-                          <td className="border border-black/10 px-4 py-3">{usSize}</td>
-                          <td className="border border-black/10 px-4 py-3">{footLength.toFixed(1)}</td>
-                          <td className={`border border-black/10 px-4 py-3 text-center font-semibold ${variant.stock > 0 ? "text-green-600" : "text-red-600"}`}>
-                            {variant.stock > 0 ? `${variant.stock} available` : "Out of stock"}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                  <tbody className="divide-y">
+                    <tr><td className="p-3">39</td><td className="p-3">6.5</td><td className="p-3">24.5 cm</td></tr>
+                    <tr><td className="p-3">40</td><td className="p-3">7.5</td><td className="p-3">25.0 cm</td></tr>
+                    <tr><td className="p-3">41</td><td className="p-3">8.0</td><td className="p-3">26.0 cm</td></tr>
+                    <tr><td className="p-3">42</td><td className="p-3">9.0</td><td className="p-3">27.0 cm</td></tr>
+                    <tr><td className="p-3">43</td><td className="p-3">10.0</td><td className="p-3">28.0 cm</td></tr>
+                    <tr><td className="p-3">44</td><td className="p-3">11.0</td><td className="p-3">28.5 cm</td></tr>
                   </tbody>
                 </table>
               </div>
-
-              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-gray-50 p-4 rounded-xl">
                 <h3 className="font-semibold text-ink mb-2">💡 How to measure your foot:</h3>
                 <ol className="text-sm text-muted space-y-1 list-decimal list-inside">
                   <li>Place your foot on a flat surface with your heel against a wall</li>
@@ -421,6 +418,16 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
           {/* Reviews Tab */}
           {activeTab === "reviews" && (
             <div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-ink">Customer Reviews ({product.reviews?.length || 0})</h3>
+                <button
+                  onClick={handleOpenReviewModal}
+                  className="bg-brand text-white px-4 py-2 rounded text-sm font-semibold hover:bg-brand-dark transition"
+                >
+                  Write a Review
+                </button>
+              </div>
+
               {hasReviews ? (
                 <div className="space-y-6">
                   {product.reviews.map((review: any) => (
@@ -449,7 +456,10 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
               ) : (
                 <div className="text-center py-12">
                   <p className="text-muted mb-4">No reviews yet. Be the first to review this product!</p>
-                  <button className="bg-brand text-white px-6 py-2 rounded font-semibold hover:bg-brand-dark transition">
+                  <button
+                    onClick={handleOpenReviewModal}
+                    className="bg-brand text-white px-6 py-2 rounded font-semibold hover:bg-brand-dark transition"
+                  >
                     Write a Review
                   </button>
                 </div>
@@ -458,6 +468,75 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
           )}
         </div>
       </div>
+
+      {/* Review Modal */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b">
+              <h3 className="text-lg font-bold text-ink">Write a Review</h3>
+              <button
+                onClick={() => setIsReviewModalOpen(false)}
+                className="text-gray-400 hover:text-ink font-bold text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Rating</label>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="text-3xl focus:outline-none transition-transform hover:scale-110"
+                    >
+                      <span className={star <= (hoverRating || reviewRating) ? "text-yellow-400" : "text-gray-300"}>
+                        ★
+                      </span>
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm font-semibold text-ink">({reviewRating}/5)</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-muted mb-1">Your Review</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share your experience with this product..."
+                  className="w-full px-3 py-2 rounded border border-gray-300 focus:outline-none focus:border-brand text-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addReviewMutation.isPending}
+                  className="px-5 py-2 bg-brand text-white rounded text-sm font-medium hover:bg-brand-dark transition disabled:opacity-50"
+                >
+                  {addReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

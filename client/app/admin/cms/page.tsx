@@ -8,7 +8,7 @@ import { productService } from "@/src/lib/services/product.service";
 import DeleteConfirmModal from "@/src/components/ui/DeleteConfirmModal";
 
 export default function CMSPage() {
-  const { data: bannersData, isLoading, isError, error } = useBanners();
+  const { data: bannersData, isLoading, isError, error } = useBanners(undefined, true);
   const createBannerMutation = useCreateBanner();
   const deleteBannerMutation = useDeleteBanner();
 

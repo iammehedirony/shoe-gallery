@@ -2,32 +2,14 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { cmsService, Banner } from "@/src/lib/services/cms.service";
-import { heroSlides as fallbackSlides } from "@/src/data/heroSlides";
+import { useBanners } from "@/src/hooks/queries/useBanners";
 
 const AUTOPLAY_MS = 6000;
 
 export default function HeroSlider() {
-  const [slides, setSlides] = useState<Banner[]>([]);
+  const { data: slides = [], isLoading } = useBanners("HERO");
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    async function fetchHeroBanners() {
-      try {
-        const data = await cmsService.getBanners("HERO");
-        if (Array.isArray(data) && data.length > 0) {
-          setSlides(data);
-        } else {
-          setSlides(fallbackSlides as any);
-        }
-      } catch (err) {
-        console.error("Failed to load hero banners", err);
-        setSlides(fallbackSlides as any);
-      }
-    }
-    fetchHeroBanners();
-  }, []);
 
   useEffect(() => {
     if (paused || slides.length === 0) return;
@@ -39,7 +21,17 @@ export default function HeroSlider() {
     return () => window.clearInterval(timer);
   }, [paused, slides.length]);
 
-  if (slides.length === 0) return null;
+  if (isLoading) {
+    return (
+      <div className="relative w-full h-[260px] sm:h-[400px] lg:h-[520px] bg-gray-100 flex items-center justify-center animate-pulse">
+        <div className="text-gray-400 font-medium text-sm">Loading featured collection...</div>
+      </div>
+    );
+  }
+
+  if (!slides || slides.length === 0) {
+    return null;
+  }
 
   return (
     <section
@@ -70,13 +62,6 @@ export default function HeroSlider() {
                 sizes="100vw"
                 className="object-cover w-full h-full"
               />
-              {slide.title && slide.script && (
-                <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center text-white text-center p-4">
-                  {slide.script && <span className="text-xs sm:text-sm uppercase tracking-widest mb-1 font-semibold">{slide.script}</span>}
-                  <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black">{slide.title}</h2>
-                  {slide.tagline && <p className="text-xs sm:text-sm mt-2 tracking-wider">{slide.tagline}</p>}
-                </div>
-              )}
             </div>
           );
         })}
