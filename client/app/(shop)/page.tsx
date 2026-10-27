@@ -1,62 +1,59 @@
-import Footer from "@/src/components/layout/Footer";
-import Header from "@/src/components/layout/Header";
+"use client";
+
+import { useEffect, useState } from "react";
 import HeroSlider from "@/src/components/home/HeroSlider";
-import ProductSection from "@/src/components/home/ProductSection";
 import PromoBannerGrid from "@/src/components/home/PromoBannerGrid";
+import TagProductSection from "@/src/components/home/TagProductSection";
 import ScrollToTop from "@/src/components/ui/ScrollToTop";
-import {
-  bestSellingProducts,
-  ladiesCollectionProducts,
-  mensCollectionProducts,
-  mensLoaferProducts,
-  newArrivalProducts,
-} from "@/src/data/mockProducts";
+import { productService } from "@/src/lib/services/product.service";
 
 export default function Home() {
+  const [tags, setTags] = useState<any[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+
+  useEffect(() => {
+    async function fetchTags() {
+      try {
+        const data = await productService.getTags();
+        setTags(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load tags for homepage", err);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    }
+    fetchTags();
+  }, []);
+
   return (
     <div className="flex flex-1 flex-col">
       <main className="flex-1">
         <h1 className="sr-only">
-          RICHKID Bangladesh — premium shoes, sneakers and accessories
+          JH Shoe Gallery Bangladesh — premium shoes, sneakers and accessories
         </h1>
 
         <HeroSlider />
         <PromoBannerGrid />
 
-        <ProductSection
-          id="new-arrival"
-          title="New Arrival"
-          products={newArrivalProducts}
-        />
-
-        <ProductSection
-          id="best-selling"
-          title="Best Selling"
-          subtitle="Best selling products just for you"
-          products={bestSellingProducts}
-          showShopAll
-        />
-
-        <ProductSection
-          id="mens-collection"
-          title="Men's Collection"
-          products={mensCollectionProducts}
-          showShopAll
-        />
-
-        <ProductSection
-          id="mens-loafer"
-          title="Men's Loafer & Formal"
-          products={mensLoaferProducts}
-          showShopAll
-        />
-
-        <ProductSection
-          id="ladies-collection"
-          title="Ladies Collection"
-          products={ladiesCollectionProducts}
-          showShopAll
-        />
+        {isLoadingTags ? (
+          <div className="py-16 text-center text-sm text-ink/50">Loading product sections...</div>
+        ) : tags.length === 0 ? (
+          <div className="py-16 text-center text-sm text-ink/50 italic bg-white p-12 my-8 rounded-lg border max-w-[1240px] mx-auto">
+            No tags created yet. Add tags in the Admin Panel (&quot;Tags & Badges&quot;) to dynamically populate homepage sections.
+          </div>
+        ) : (
+          tags.map((tag, index) => (
+            <TagProductSection
+              key={tag.id}
+              id={`tag-section-${tag.slug}`}
+              title={tag.name}
+              subtitle={`Explore our collection of ${tag.name}`}
+              tag={tag.slug}
+              showShopAll={index % 2 === 1}
+              shopHref="/shop"
+            />
+          ))
+        )}
       </main>
       <ScrollToTop />
     </div>

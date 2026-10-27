@@ -35,7 +35,10 @@ const getProducts = async (req, res, next) => {
     if (tag) {
       where.tags = {
         some: {
-          slug: tag,
+          OR: [
+            { slug: { equals: tag.toLowerCase(), mode: "insensitive" } },
+            { name: { equals: tag, mode: "insensitive" } },
+          ],
         },
       };
     }
@@ -150,12 +153,13 @@ const getCategories = async (req, res, next) => {
           include: {
             _count: { select: { products: true } },
           },
+          orderBy: { createdAt: "asc" },
         },
         _count: {
           select: { products: true },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: { createdAt: "asc" },
     });
 
     return ApiResponse.success(res, categories, "Categories and subcategories retrieved successfully");
