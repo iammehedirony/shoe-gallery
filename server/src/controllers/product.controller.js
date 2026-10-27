@@ -2,6 +2,23 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/apiError");
 const ApiResponse = require("../utils/apiResponse");
 
+// Helper function to get all category IDs including children
+const getCategoryIdsWithChildren = async (categorySlug) => {
+  const category = await prisma.category.findUnique({
+    where: { slug: categorySlug },
+    include: { children: { select: { id: true } } },
+  });
+
+  if (!category) return null;
+
+  const categoryIds = [category.id];
+  if (category.children && category.children.length > 0) {
+    categoryIds.push(...category.children.map((child) => child.id));
+  }
+
+  return categoryIds;
+};
+
 // @desc    Get all products with filters, search, sorting & pagination
 // @route   GET /api/v1/products
 // @access  Public
@@ -27,9 +44,32 @@ const getProducts = async (req, res, next) => {
     }
 
     if (category) {
-      where.category = {
-        slug: category,
-      };
+      // Support both single category slug and nested category path
+      // e.g., "mens" or "mens/pants"
+      const categorySlugs = category.includes('/') ? category.split('/') : [category];
+      const targetSlug = categorySlugs[categorySlugs.length - 1];
+
+      // If it's a nested path, verify the hierarchy
+      if (categorySlugs.length > 1) {
+        const parentSlug = categorySlugs[0];
+        where.category = {
+          slug: targetSlug,
+          parent: {
+            slug: parentSlug,
+          },
+        };
+      } else {
+        // Single category - get all products in this category and its children
+        const categoryIds = await getCategoryIdsWithChildren(targetSlug);
+        if (categoryIds) {
+          where.categoryId = {
+            in: categoryIds,
+          };
+        } else {
+          // Category not found, return empty results
+          where.id = 'non-existent';
+        }
+      }
     }
 
     if (tag) {

@@ -54,7 +54,8 @@ export default function TagProductSection({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:gap-5">
             {products.map((product: any) => {
               const formattedProduct = {
-                id: product.id,
+                id: product.id || product._id,
+                slug: product.slug,
                 title: product.title,
                 image: product.image || product.images?.[0] || "/logo.png",
                 price: Number(product.price),
@@ -63,7 +64,7 @@ export default function TagProductSection({
                 sizes: product.variants?.map((v: any) => v.size) || ["39", "40", "41", "42"],
                 badge: product.badge,
               };
-              return <ProductCard key={product.id} product={formattedProduct} />;
+              return <ProductCard key={product.id || product._id} product={formattedProduct} />;
             })}
           </div>
         )}

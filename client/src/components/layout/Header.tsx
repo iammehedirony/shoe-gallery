@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { productService } from "@/src/lib/services/product.service";
 import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon, ChevronDownIcon } from "@/src/components/ui/Icons";
+import { useAuthStore } from "@/src/store/authStore";
 import Image from "next/image";
 
 const CART_COUNT = 0;
@@ -20,6 +21,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const { user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     async function fetchNavbarCategories() {
@@ -68,7 +70,7 @@ export default function Header() {
                   {cat.children.map((sub: any) => (
                     <Link
                       key={sub.id}
-                      href={`/category/${sub.slug}`}
+                      href={`/category/${cat.slug}/${sub.slug}`}
                       className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-ink/70 hover:bg-gray-50 hover:text-brand rounded"
                     >
                       <span className="w-2 h-2 bg-brand/40 rounded-full"></span>
@@ -96,13 +98,13 @@ export default function Header() {
             <SearchIcon className="h-[18px] w-[18px]" />
           </button>
 
-          <button
-            type="button"
+          <Link
+            href={isAuthenticated ? "/account" : "/login"}
             aria-label="My account"
             className="hidden h-9 w-9 place-items-center rounded-full text-ink/80 transition-colors hover:bg-blush hover:text-brand sm:grid"
           >
             <UserIcon className="h-[18px] w-[18px]" />
-          </button>
+          </Link>
 
           <a
             href="#"
@@ -115,12 +117,21 @@ export default function Header() {
             </span>
           </a>
 
-          <a
-            href="/login"
-            className="hidden text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/80 transition-colors hover:text-brand sm:block"
-          >
-            Log In
-          </a>
+          {isAuthenticated ? (
+            <Link
+              href="/account"
+              className="hidden text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/80 transition-colors hover:text-brand sm:block"
+            >
+              {user?.name?.split(' ')[0] || 'Account'}
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden text-[11px] font-semibold uppercase tracking-[0.16em] text-ink/80 transition-colors hover:text-brand sm:block"
+            >
+              Log In
+            </Link>
+          )}
 
           <button
             type="button"
@@ -163,7 +174,7 @@ export default function Header() {
                   {cat.children.map((sub: any) => (
                     <Link
                       key={sub.id}
-                      href={`/category/${sub.slug}`}
+                      href={`/category/${cat.slug}/${sub.slug}`}
                       onClick={closeMobile}
                       className="block text-xs text-ink/60 py-1 hover:text-brand"
                     >
@@ -181,9 +192,23 @@ export default function Header() {
           >
             Shop
           </Link>
-          <a href="/login" onClick={closeMobile} className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-            Log In
-          </a>
+          {isAuthenticated ? (
+            <Link
+              href="/account"
+              onClick={closeMobile}
+              className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand"
+            >
+              My Account
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              onClick={closeMobile}
+              className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand"
+            >
+              Log In
+            </Link>
+          )}
         </nav>
       </div>
     </header>

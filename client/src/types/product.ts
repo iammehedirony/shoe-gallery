@@ -2,6 +2,8 @@ export type ProductBadge = "Fresh Stock" | "New In" | "Hot" | "Limited";
 
 export interface Product {
   id: string;
+  _id?: string; // Support MongoDB _id
+  slug?: string; // Support slug-based routing
   title: string;
   image: string;
   images?: string[];

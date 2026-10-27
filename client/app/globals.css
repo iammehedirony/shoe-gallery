@@ -63,3 +63,24 @@
     color: #ffffff;
   }
 }
+
+@layer utilities {
+  /* Splash screen animations */
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shine {
+    animation: shine 2s ease-in-out infinite;
+  }
+
+  /* Smooth transitions */
+  .duration-600 {
+    transition-duration: 600ms;
+  }
+}
