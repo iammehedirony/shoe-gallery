@@ -23,9 +23,15 @@ export default function HeroSlider() {
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-[260px] sm:h-[400px] lg:h-[520px] bg-gray-100 flex items-center justify-center animate-pulse">
-        <div className="text-gray-400 font-medium text-sm">Loading featured collection...</div>
-      </div>
+      <section aria-label="Featured collections" className="relative isolate overflow-hidden w-full bg-gray-100">
+        <div className="relative w-full h-[260px] sm:h-[400px] lg:h-[520px] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <div className="w-8 h-2 bg-gray-300 rounded-full" />
+            <div className="w-2 h-2 bg-gray-300 rounded-full" />
+            <div className="w-2 h-2 bg-gray-300 rounded-full" />
+          </div>
+        </div>
+      </section>
     );
   }
 

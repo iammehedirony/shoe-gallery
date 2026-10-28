@@ -214,16 +214,32 @@ export default function ProductDetailsClient({ productId }: ProductDetailsClient
               <span className="text-sm text-muted">({product.reviews?.length || 0} reviews)</span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-black text-ink">{formatPrice(Number(product.price))}</span>
-              {product.oldPrice && Number(product.oldPrice) > Number(product.price) && (
-                <span className="text-lg text-muted line-through">{formatPrice(Number(product.oldPrice))}</span>
+            {/* Price Section */}
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl bg-gray-50/80 p-4 border border-black/5">
+              <span className="text-3xl sm:text-4xl font-black text-brand tracking-tight">
+                {formatPrice(Number(product.price))}
+              </span>
+
+              {((product.oldPrice && Number(product.oldPrice) > Number(product.price)) || (product.discount > 0 && Number(product.oldPrice) > Number(product.price))) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-base sm:text-lg font-semibold text-muted line-through">
+                    {formatPrice(Number(product.oldPrice))}
+                  </span>
+                  <span className="inline-flex items-center rounded-md bg-brand px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-sm">
+                    {product.discount > 0 ? `${product.discount}% OFF` : "Sale"}
+                  </span>
+                </div>
               )}
-              {product.discount > 0 && (
-                <span className="px-2.5 py-0.5 bg-brand/10 text-brand text-xs font-bold rounded">
-                  {product.discount}% OFF
-                </span>
+
+              {product.discount > 0 && (!product.oldPrice || Number(product.oldPrice) <= Number(product.price)) && (
+                <div className="flex items-center gap-2">
+                  <span className="text-base sm:text-lg font-semibold text-muted line-through">
+                    {formatPrice(Number(product.price) / (1 - product.discount / 100))}
+                  </span>
+                  <span className="inline-flex items-center rounded-md bg-brand px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-sm">
+                    {product.discount}% OFF
+                  </span>
+                </div>
               )}
             </div>
 

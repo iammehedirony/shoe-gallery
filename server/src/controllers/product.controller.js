@@ -214,6 +214,18 @@ const getCategories = async (req, res, next) => {
 const createCategory = async (req, res, next) => {
   try {
     const { name, slug, icon, image, description, parentId } = req.body;
+    const resolvedParentId = parentId || null;
+
+    const existing = await prisma.category.findFirst({
+      where: {
+        slug,
+        parentId: resolvedParentId,
+      },
+    });
+
+    if (existing) {
+      throw ApiError.badRequest("A category or subcategory with this slug already exists under this parent.");
+    }
 
     const category = await prisma.category.create({
       data: {
@@ -222,7 +234,7 @@ const createCategory = async (req, res, next) => {
         icon,
         image,
         description,
-        parentId: parentId || null,
+        parentId: resolvedParentId,
       },
       include: { parent: true },
     });
@@ -266,15 +278,30 @@ const updateCategory = async (req, res, next) => {
       throw ApiError.notFound("Category not found");
     }
 
+    const resolvedParentId = parentId !== undefined ? (parentId || null) : category.parentId;
+    const resolvedSlug = slug !== undefined ? slug : category.slug;
+
+    const existing = await prisma.category.findFirst({
+      where: {
+        slug: resolvedSlug,
+        parentId: resolvedParentId,
+        NOT: { id },
+      },
+    });
+
+    if (existing) {
+      throw ApiError.badRequest("A category or subcategory with this slug already exists under this parent.");
+    }
+
     const updatedCategory = await prisma.category.update({
       where: { id },
       data: {
-        name,
-        slug,
-        icon,
-        image,
-        description,
-        parentId: parentId !== undefined ? (parentId || null) : category.parentId,
+        name: name !== undefined ? name : category.name,
+        slug: resolvedSlug,
+        icon: icon !== undefined ? icon : category.icon,
+        image: image !== undefined ? image : category.image,
+        description: description !== undefined ? description : category.description,
+        parentId: resolvedParentId,
       },
       include: { parent: true, children: true },
     });

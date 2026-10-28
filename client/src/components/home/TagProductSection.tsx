@@ -1,6 +1,7 @@
 "use client";
 
 import ProductCard from "@/src/components/product/ProductCard";
+import ProductCardSkeleton from "@/src/components/product/ProductCardSkeleton";
 import { ChevronRightIcon } from "@/src/components/ui/Icons";
 import { useProducts } from "@/src/hooks/queries/useProducts";
 
@@ -49,7 +50,11 @@ export default function TagProductSection({
         </div>
 
         {isLoading ? (
-          <div className="py-12 text-center text-sm text-ink/50">Loading {title}...</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:gap-5">
             {products.map((product: any) => {

@@ -61,8 +61,8 @@ enum ProductBadge {
 
 model Category {
   id          String    @id @default(uuid())
-  name        String    @unique
-  slug        String    @unique
+  name        String
+  slug        String
   icon        String?   // e.g. "boot", "loafer", "casual", "sports"
   image       String?
   description String?
@@ -76,6 +76,8 @@ model Category {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@index([slug])
+  @@index([parentId])
   @@map("categories")
 }
 

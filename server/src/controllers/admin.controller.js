@@ -295,6 +295,64 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+// @desc    Update product
+// @route   PUT /api/v1/admin/products/:id
+// @access  Private/Admin
+const updateProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { 
+      title, slug, sku, description, price, oldPrice, discount, badge, 
+      image, images, categoryId, tagIds, isFlashSale, flashSaleStartTime, flashSaleEndTime, variants 
+    } = req.body;
+
+    const existingProduct = await prisma.product.findUnique({ where: { id } });
+    if (!existingProduct) {
+      throw ApiError.notFound("Product not found");
+    }
+
+    if (variants && Array.isArray(variants)) {
+      await prisma.productVariant.deleteMany({ where: { productId: id } });
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        title,
+        slug,
+        sku,
+        description,
+        price,
+        oldPrice,
+        discount,
+        badge,
+        isFlashSale: isFlashSale !== undefined ? isFlashSale : existingProduct.isFlashSale,
+        flashSaleStartTime: flashSaleStartTime ? new Date(flashSaleStartTime) : undefined,
+        flashSaleEndTime: flashSaleEndTime ? new Date(flashSaleEndTime) : undefined,
+        image,
+        images: images || undefined,
+        categoryId,
+        tags: tagIds !== undefined ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined,
+        variants: variants && Array.isArray(variants) ? {
+          create: variants.map((v) => ({
+            size: v.size,
+            stock: v.stock,
+          })),
+        } : undefined,
+      },
+      include: {
+        variants: true,
+        category: true,
+        tags: true,
+      },
+    });
+
+    return ApiResponse.success(res, updatedProduct, "Product updated successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Delete product
 // @route   DELETE /api/v1/admin/products/:id
 // @access  Private/Admin
@@ -369,6 +427,7 @@ module.exports = {
   updateCustomer,
   deleteCustomer,
   createProduct,
+  updateProduct,
   deleteProduct,
   createCategory: productController.createCategory,
   updateCategory: productController.updateCategory,

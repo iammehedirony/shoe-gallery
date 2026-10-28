@@ -12,8 +12,13 @@ export default function PromoBannerGrid() {
       <section aria-label="Current promotions" className="bg-white">
         <div className="mx-auto grid w-full max-w-[1240px] gap-4 px-4 py-6 sm:grid-cols-3 sm:gap-5 lg:px-6 lg:py-8">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="min-h-[170px] bg-gray-100 rounded-xl animate-pulse flex items-center justify-center text-gray-400 text-xs">
-              Loading promotion...
+            <div key={i} className="relative min-h-[170px] bg-gray-100 rounded-xl p-5 animate-pulse flex flex-col justify-between overflow-hidden">
+              <div className="space-y-2">
+                <div className="h-3 w-16 bg-gray-200 rounded" />
+                <div className="h-8 w-3/4 bg-gray-200 rounded" />
+                <div className="h-3 w-1/2 bg-gray-200 rounded" />
+              </div>
+              <div className="h-3 w-24 bg-gray-200 rounded mt-4" />
             </div>
           ))}
         </div>

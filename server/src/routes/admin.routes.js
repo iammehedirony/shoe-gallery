@@ -27,6 +27,7 @@ router.patch("/customers/:id", adminController.updateCustomer);
 router.delete("/customers/:id", adminController.deleteCustomer);
 
 router.post("/products", validate(createProductSchema), adminController.createProduct);
+router.put("/products/:id", adminController.updateProduct);
 router.delete("/products/:id", adminController.deleteProduct);
 
 // Category & Subcategory Management

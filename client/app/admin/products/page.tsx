@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useProducts } from "@/src/hooks/queries/useProducts";
 import { useDeleteProduct } from "@/src/hooks/mutations/useDeleteProduct";
 import { useCreateProduct } from "@/src/hooks/mutations/useCreateProduct";
+import { useUpdateProduct } from "@/src/hooks/mutations/useUpdateProduct";
 import { productService } from "@/src/lib/services/product.service";
 import DeleteConfirmModal from "@/src/components/ui/DeleteConfirmModal";
 
@@ -15,8 +15,10 @@ export default function ProductsPage() {
   const { data: responseData, isLoading, isError, error } = useProducts();
   const deleteProductMutation = useDeleteProduct();
   const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [badges, setBadges] = useState<any[]>([]);
@@ -69,7 +71,7 @@ export default function ProductsPage() {
           setTags(Array.isArray(tagRes) ? tagRes : []);
           const fetchedBadges = Array.isArray(badgeRes) ? badgeRes : [];
           setBadges(fetchedBadges);
-          if (fetchedBadges.length > 0) {
+          if (fetchedBadges.length > 0 && !badge) {
             setBadge(fetchedBadges[0].name);
           }
         } catch (err) {
@@ -89,17 +91,18 @@ export default function ProductsPage() {
     } else {
       const selectedCat = categories.find(c => c.id === parentCategoryId);
       setSubCategories(selectedCat?.children || []);
-      setSubCategoryId("");
     }
   }, [parentCategoryId, categories]);
 
   useEffect(() => {
-    const generatedSlug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
-    setSlug(generatedSlug);
-  }, [title]);
+    if (!editingProductId && title) {
+      const generatedSlug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+      setSlug(generatedSlug);
+    }
+  }, [title, editingProductId]);
 
   const handleStockChange = (size: string, stock: number) => {
     setSizeStocks(prev => ({
@@ -123,6 +126,7 @@ export default function ProductsPage() {
   };
 
   const handleResetForm = () => {
+    setEditingProductId(null);
     setTitle("");
     setSlug("");
     setSku("");
@@ -140,6 +144,60 @@ export default function ProductsPage() {
     setIsFlashSale(false);
     setFlashSaleEndTime("");
     setSizeStocks({ "39": 10, "40": 10, "41": 10, "42": 10 });
+  };
+
+  const handleOpenAddModal = () => {
+    handleResetForm();
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (product: any) => {
+    setEditingProductId(product.id || product._id);
+    setTitle(product.title || "");
+    setSlug(product.slug || "");
+    setSku(product.sku || "");
+    setDescription(product.description || "");
+    setPrice(product.price !== undefined ? String(product.price) : "");
+    setOldPrice(product.oldPrice !== undefined ? String(product.oldPrice) : "");
+    setDiscount(product.discount !== undefined ? String(product.discount) : "");
+    setBadge(product.badge || badges[0]?.name || "");
+    
+    const imgs = product.images && product.images.length > 0 ? product.images : [product.image].filter(Boolean);
+    setImagePreviews(imgs);
+    setImageFiles(null);
+
+    const catId = product.categoryId || product.category?.id;
+    let foundParent = "";
+    let foundSub = "";
+    if (catId) {
+      const parentCat = categories.find(c => c.id === catId || c.children?.some((sub: any) => sub.id === catId));
+      if (parentCat) {
+        if (parentCat.id === catId) {
+          foundParent = catId;
+        } else {
+          foundParent = parentCat.id;
+          foundSub = catId;
+        }
+      } else {
+        foundParent = catId;
+      }
+    }
+    setParentCategoryId(foundParent);
+    setSubCategoryId(foundSub);
+
+    const tagIds = product.tags ? product.tags.map((t: any) => t.id || t._id || t) : [];
+    setSelectedTagIds(tagIds);
+
+    setIsFlashSale(product.isFlashSale || false);
+    setFlashSaleEndTime(product.flashSaleEndTime ? new Date(product.flashSaleEndTime).toISOString().slice(0, 16) : "");
+
+    const stocks: Record<string, number> = { "38": 0, "39": 0, "40": 0, "41": 0, "42": 0, "43": 0, "44": 0 };
+    product.variants?.forEach((v: any) => {
+      stocks[v.size] = v.stock;
+    });
+    setSizeStocks(stocks);
+
+    setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -161,8 +219,8 @@ export default function ProductsPage() {
       return;
     }
 
-    let primaryImageUrl = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800";
-    let allImageUrls = [primaryImageUrl];
+    let primaryImageUrl = imagePreviews[0] || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800";
+    let allImageUrls = imagePreviews.length > 0 ? imagePreviews : [primaryImageUrl];
 
     if (imageFiles && imageFiles.length > 0) {
       setIsUploading(true);
@@ -203,11 +261,15 @@ export default function ProductsPage() {
     };
 
     try {
-      await createProductMutation.mutateAsync(payload);
+      if (editingProductId) {
+        await updateProductMutation.mutateAsync({ id: editingProductId, data: payload });
+      } else {
+        await createProductMutation.mutateAsync(payload);
+      }
       setIsModalOpen(false);
       handleResetForm();
     } catch (err: any) {
-      alert(err.message || "Failed to create product");
+      alert(err.message || (editingProductId ? "Failed to update product" : "Failed to create product"));
     }
   };
 
@@ -237,7 +299,7 @@ export default function ProductsPage() {
           <p className="text-sm text-ink/60">Manage your store products, pricing, and inventory.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="bg-brand text-white px-6 py-2.5 rounded font-bold text-sm hover:opacity-95 transition shadow-sm"
         >
           + Add New Product
@@ -272,7 +334,7 @@ export default function ProductsPage() {
                 const imageUrl = product.image || product.images?.[0] || "/logo.png";
 
                 return (
-                  <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={product.id || product._id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 w-16">
                       <div className="relative h-12 w-12 rounded overflow-hidden bg-gray-100 border border-black/5">
                         <Image 
@@ -304,14 +366,16 @@ export default function ProductsPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <Link 
-                          href={`/admin/products/${product.id}`}
+                        <button 
+                          type="button"
+                          onClick={() => handleOpenEditModal(product)}
                           className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded hover:bg-blue-100 transition"
                         >
                           Edit
-                        </Link>
+                        </button>
                         <button 
-                          onClick={() => handleDeleteClick(product.id, product.title)}
+                          type="button"
+                          onClick={() => handleDeleteClick(product.id || product._id, product.title)}
                           className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded hover:bg-red-100 transition"
                         >
                           Delete
@@ -337,12 +401,12 @@ export default function ProductsPage() {
         onClose={() => setDeleteModalOpen(false)}
       />
 
-      {/* Add Product Modal */}
+      {/* Add / Edit Product Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="text-2xl font-bold">Add New Product</h2>
+                <h2 className="text-2xl font-bold">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="text-2xl font-bold text-ink/60 hover:text-ink">✕</button>
             </div>
 
@@ -583,10 +647,10 @@ export default function ProductsPage() {
                   </button>
                   <button 
                     type="submit" 
-                    disabled={createProductMutation.isPending || isUploading}
+                    disabled={createProductMutation.isPending || updateProductMutation.isPending || isUploading}
                     className="bg-brand text-white font-bold px-8 py-3 rounded text-sm transition hover:opacity-95 disabled:opacity-50 shadow-sm"
                   >
-                    {isUploading ? "UPLOADING IMAGES..." : createProductMutation.isPending ? "CREATING..." : "UPLOAD PRODUCT"}
+                    {isUploading ? "UPLOADING IMAGES..." : (createProductMutation.isPending || updateProductMutation.isPending) ? (editingProductId ? "UPDATING..." : "CREATING...") : (editingProductId ? "UPDATE PRODUCT" : "UPLOAD PRODUCT")}
                   </button>
                 </div>
             </form>

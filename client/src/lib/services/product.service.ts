@@ -75,6 +75,11 @@ export const productService = {
     return res?.data || res;
   },
 
+  updateProduct: async (id: string, data: CreateProductInput) => {
+    const res: any = await apiClient.put<any>(`/admin/products/${id}`, data);
+    return res?.data || res;
+  },
+
   deleteProduct: async (id: string) => {
     const res: any = await apiClient.delete<any>(`/admin/products/${id}`);
     return res?.data || res;
