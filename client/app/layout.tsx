@@ -5,6 +5,7 @@ import { LoadingProvider } from "@/src/contexts/LoadingContext";
 import { ToastProvider } from "@/src/contexts/ToastContext";
 import SplashScreenWrapper from "@/src/components/ui/SplashScreenWrapper";
 import SearchModal from "@/src/components/ui/SearchModal";
+import MobileSidebar from "@/src/components/ui/MobileSidebar";
 
 export const metadata: Metadata = {
   title: "JH SHOE GALLERY | Premium Shoes & Lifestyle",
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <QueryProvider>
               {children}
               <SearchModal />
+              <MobileSidebar />
             </QueryProvider>
           </ToastProvider>
         </LoadingProvider>

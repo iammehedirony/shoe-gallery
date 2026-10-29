@@ -10,6 +10,7 @@ export default function HeroSlider() {
   const { data: slides = [], isLoading } = useBanners("HERO");
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     if (paused || slides.length === 0) return;
@@ -20,6 +21,34 @@ export default function HeroSlider() {
 
     return () => window.clearInterval(timer);
   }, [paused, slides.length]);
+
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    // Ignore if clicking on indicator buttons
+    if ((e.target as HTMLElement).closest("button")) {
+      return;
+    }
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    setTouchStartX(clientX);
+    setPaused(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (touchStartX === null) return;
+    const clientX = "changedTouches" in e ? e.changedTouches[0].clientX : e.clientX;
+    const diff = touchStartX - clientX;
+    const threshold = 50;
+
+    if (diff > threshold) {
+      // Swipe Left -> Next slide
+      setActiveIndex((index) => (index + 1) % slides.length);
+    } else if (diff < -threshold) {
+      // Swipe Right -> Previous slide
+      setActiveIndex((index) => (index - 1 + slides.length) % slides.length);
+    }
+
+    setTouchStartX(null);
+    setPaused(false);
+  };
 
   if (isLoading) {
     return (
@@ -42,11 +71,18 @@ export default function HeroSlider() {
   return (
     <section
       aria-label="Featured collections"
-      className="relative isolate overflow-hidden w-full bg-gray-100"
+      className="relative isolate overflow-hidden w-full bg-gray-100 select-none"
       onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseLeave={() => {
+        setPaused(false);
+        if (touchStartX !== null) setTouchStartX(null);
+      }}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleTouchStart}
+      onMouseUp={handleTouchEnd}
     >
       <div className="relative w-full h-[260px] sm:h-[400px] lg:h-[520px]">
         {slides.map((slide, index) => {
@@ -66,7 +102,7 @@ export default function HeroSlider() {
                 fill
                 priority={index === 0}
                 sizes="100vw"
-                className="object-cover w-full h-full"
+                className="object-cover w-full h-full pointer-events-none"
               />
             </div>
           );
@@ -76,7 +112,7 @@ export default function HeroSlider() {
           <div
             role="tablist"
             aria-label="Hero slides"
-            className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2"
+            className="absolute bottom-4 left-1/2 z-50 pointer-events-auto flex -translate-x-1/2 items-center gap-2"
           >
             {slides.map((slide, index) => {
               const isActive = index === activeIndex;
@@ -88,8 +124,11 @@ export default function HeroSlider() {
                   role="tab"
                   aria-selected={isActive}
                   aria-label={`Go to slide ${index + 1}`}
-                  onClick={() => setActiveIndex(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveIndex(index);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                     isActive
                       ? "w-8 bg-white"
                       : "w-2 bg-white/60 hover:bg-white"
