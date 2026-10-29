@@ -11,8 +11,15 @@ export default function PromoModal() {
   const [isVisible, setIsVisible] = useState(false); // Controls mounting
   const [isOpen, setIsOpen] = useState(false);       // Controls CSS transition (opacity/scale)
   const [timeLeft, setTimeLeft] = useState(4);
+  const [activePromo, setActivePromo] = useState<any>(null);
 
-  const activePromo = promoBanners.find((b) => b.isActive) || promoBanners[0];
+  useEffect(() => {
+    const activePromos = promoBanners.filter((b) => b.isActive);
+    if (activePromos.length === 0) return;
+    // Randomly select one active promo banner when multiple exist, or pick the first one
+    const randomIndex = Math.floor(Math.random() * activePromos.length);
+    setActivePromo(activePromos[randomIndex]);
+  }, [promoBanners]);
 
   useEffect(() => {
     if (!activePromo) return;
