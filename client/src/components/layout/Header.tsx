@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { productService } from "@/src/lib/services/product.service";
-import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon, ChevronDownIcon } from "@/src/components/ui/Icons";
+import { BagIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon, ChevronDownIcon, FacebookIcon, InstagramIcon, EmailIcon, PhoneIcon } from "@/src/components/ui/Icons";
 import { useAuthStore } from "@/src/store/authStore";
 import { useCartStore } from "@/src/store/cartStore";
 import { useSearchStore } from "@/src/store/searchStore";
@@ -21,6 +21,7 @@ export function SiteLogo({ className = "" }: { className?: string }) {
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [openSubCategories, setOpenSubCategories] = useState<Record<string, boolean>>({});
   const { data: categories = [], isLoading } = useCategories();
   const { user, isAuthenticated } = useAuthStore();
   const cartItems = useCartStore((state) => state.items);
@@ -28,6 +29,13 @@ export default function Header() {
   const openSearch = useSearchStore((state) => state.openSearch);
 
   const closeMobile = () => setMobileOpen(false);
+
+  const toggleSubCategory = (catId: string) => {
+    setOpenSubCategories((prev) => ({
+      ...prev,
+      [catId]: !prev[catId],
+    }));
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/95 backdrop-blur-md">
@@ -157,70 +165,169 @@ export default function Header() {
         )}
       </div>
 
+      {/* Mobile Sidebar Drawer (Fixed, Solid White, Slides from Left) */}
       <div
-        id="mobile-menu"
-        className={`overflow-hidden border-t border-black/[0.06] bg-white transition-[max-height] duration-300 lg:hidden ${
-          mobileOpen ? "max-h-[500px]" : "max-h-0"
+        className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
+        aria-hidden={!mobileOpen}
       >
-        <nav aria-label="Mobile navigation" className="mx-auto flex max-w-[1240px] flex-col px-4 py-3 overflow-y-auto max-h-[450px]">
-          <Link
-            href="/"
-            onClick={closeMobile}
-            className="border-b border-black/[0.05] py-3 text-xs font-semibold uppercase tracking-[0.18em] text-ink/75"
-          >
-            Home
-          </Link>
-          {categories.map((cat: any) => (
-            <div key={cat.id} className="border-b border-black/[0.05] py-2">
-              <Link
-                href={`/category/${cat.slug}`}
-                onClick={closeMobile}
-                className="block text-xs font-semibold uppercase tracking-[0.18em] text-ink/75 py-1"
-              >
-                {cat.name}
-              </Link>
-              {cat.children && cat.children.length > 0 && (
-                <div className="pl-4 py-1 space-y-1">
-                  {cat.children.map((sub: any) => (
+        {/* Backdrop Overlay */}
+        <div
+          className="fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm"
+          onClick={closeMobile}
+          aria-hidden="true"
+        />
+
+        {/* Drawer Panel */}
+        <div
+          className={`fixed inset-y-0 left-0 flex w-[85vw] max-w-[320px] h-screen flex-col bg-white shadow-2xl z-[100] transition-transform duration-300 ease-in-out ${
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Drawer Header: Logo + Close */}
+          <div className="flex items-center justify-between border-b border-black/[0.08] px-6 py-5 bg-white shrink-0">
+            <Link href="/" aria-label="JH Shoe Gallery home" onClick={closeMobile} className="shrink-0">
+              <SiteLogo />
+            </Link>
+            <button
+              type="button"
+              onClick={closeMobile}
+              aria-label="Close menu"
+              className="grid h-8 w-8 place-items-center rounded-full text-ink/75 transition-colors hover:bg-gray-100 hover:text-brand"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Scrollable Navigation */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1 bg-white">
+            <Link
+              href="/"
+              onClick={closeMobile}
+              className="flex items-center py-3 text-xs font-bold uppercase tracking-[0.18em] text-ink/85 transition-colors hover:text-brand border-b border-black/[0.05]"
+            >
+              Home
+            </Link>
+
+            {categories.map((cat: any) => {
+              const hasChildren = cat.children && cat.children.length > 0;
+              const isOpen = openSubCategories[cat.id];
+              return (
+                <div key={cat.id} className="border-b border-black/[0.05]">
+                  <div className="flex items-center justify-between py-3">
                     <Link
-                      key={sub.id}
-                      href={`/category/${cat.slug}/${sub.slug}`}
+                      href={`/category/${cat.slug}`}
                       onClick={closeMobile}
-                      className="block text-xs text-ink/60 py-1 hover:text-brand"
+                      className="text-xs font-bold uppercase tracking-[0.18em] text-ink/85 transition-colors hover:text-brand"
                     >
-                      - {sub.name}
+                      {cat.name}
                     </Link>
-                  ))}
+                    {hasChildren && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSubCategory(cat.id)}
+                        aria-label={`Toggle ${cat.name} subcategories`}
+                        className="p-1 text-ink/60 transition-colors hover:text-brand"
+                      >
+                        <ChevronDownIcon
+                          className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  {hasChildren && (
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isOpen ? "max-h-96 pb-3" : "max-h-0"
+                      }`}
+                    >
+                      <div className="pl-4 space-y-2 border-l border-brand/20 ml-1">
+                        {cat.children.map((sub: any) => (
+                          <Link
+                            key={sub.id}
+                            href={`/category/${cat.slug}/${sub.slug}`}
+                            onClick={closeMobile}
+                            className="block py-1 text-xs font-medium text-ink/65 transition-colors hover:text-brand"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              );
+            })}
+
+            <Link
+              href="/shop"
+              onClick={closeMobile}
+              className="flex items-center py-3 text-xs font-bold uppercase tracking-[0.18em] text-ink/85 transition-colors hover:text-brand border-b border-black/[0.05]"
+            >
+              Shop
+            </Link>
+          </div>
+
+          {/* Bottom Section: Login / Account & Social Icons */}
+          <div className="border-t border-black/[0.08] px-6 py-5 bg-white shrink-0 space-y-4">
+            {isAuthenticated ? (
+              <Link
+                href="/account"
+                onClick={closeMobile}
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-white border border-black/10 py-3 text-xs font-bold uppercase tracking-[0.16em] text-ink shadow-sm transition-colors hover:border-brand hover:text-brand"
+              >
+                <UserIcon className="h-4 w-4" />
+                {user?.name || 'My Account'}
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                onClick={closeMobile}
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-white border border-black/10 py-3 text-xs font-bold uppercase tracking-[0.16em] text-ink shadow-sm transition-colors hover:border-brand hover:text-brand"
+              >
+                <UserIcon className="h-4 w-4" />
+                Login
+              </Link>
+            )}
+
+            <div className="flex items-center justify-around pt-1 text-ink/70">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="p-2 transition-colors hover:text-brand"
+              >
+                <FacebookIcon className="h-5 w-5" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="p-2 transition-colors hover:text-brand"
+              >
+                <InstagramIcon className="h-5 w-5" />
+              </a>
+              <a
+                href="mailto:support@jhshoegallery.com"
+                aria-label="Email"
+                className="p-2 transition-colors hover:text-brand"
+              >
+                <EmailIcon className="h-5 w-5" />
+              </a>
+              <a
+                href="tel:+8801700000000"
+                aria-label="Phone"
+                className="p-2 transition-colors hover:text-brand"
+              >
+                <PhoneIcon className="h-5 w-5" />
+              </a>
             </div>
-          ))}
-          <Link
-            href="/shop"
-            onClick={closeMobile}
-            className="border-b border-black/[0.05] py-3 text-xs font-semibold uppercase tracking-[0.18em] text-ink/75"
-          >
-            Shop
-          </Link>
-          {isAuthenticated ? (
-            <Link
-              href="/account"
-              onClick={closeMobile}
-              className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand"
-            >
-              My Account
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              onClick={closeMobile}
-              className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand"
-            >
-              Log In
-            </Link>
-          )}
-        </nav>
+          </div>
+        </div>
       </div>
     </header>
   );
