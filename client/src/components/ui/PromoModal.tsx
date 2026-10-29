@@ -7,6 +7,7 @@ import { useBanners } from "@/src/hooks/queries/useBanners";
 import { CloseIcon } from "@/src/components/ui/Icons";
 
 export default function PromoModal() {
+  const [isHome, setIsHome] = useState(false);
   const { data: promoBanners = [] } = useBanners("PROMO");
   const [isVisible, setIsVisible] = useState(false); // Controls mounting
   const [isOpen, setIsOpen] = useState(false);       // Controls CSS transition (opacity/scale)
@@ -14,15 +15,20 @@ export default function PromoModal() {
   const [activePromo, setActivePromo] = useState<any>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname === "/") {
+      setIsHome(true);
+    }
+  }, []);
+
+  useEffect(() => {
     const activePromos = promoBanners.filter((b) => b.isActive);
     if (activePromos.length === 0) return;
-    // Randomly select one active promo banner when multiple exist, or pick the first one
     const randomIndex = Math.floor(Math.random() * activePromos.length);
     setActivePromo(activePromos[randomIndex]);
   }, [promoBanners]);
 
   useEffect(() => {
-    if (!activePromo) return;
+    if (!isHome || !activePromo) return;
 
     // Check session storage
     const hasShown = sessionStorage.getItem("jh_promo_shown");
@@ -41,7 +47,7 @@ export default function PromoModal() {
     }, 1200);
 
     return () => window.clearTimeout(showTimer);
-  }, [activePromo]);
+  }, [isHome, activePromo]);
 
   // Countdown timer & auto close
   useEffect(() => {
@@ -76,7 +82,7 @@ export default function PromoModal() {
     return () => window.clearTimeout(unmountTimer);
   };
 
-  if (!isVisible) return null;
+  if (!isHome || !isVisible) return null;
 
   const content = (
     <div className="relative w-full h-[380px] sm:h-[480px] lg:h-[550px] bg-gray-100 rounded-none overflow-hidden">
