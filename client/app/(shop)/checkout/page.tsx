@@ -90,8 +90,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (formData.paymentMethod === "BKASH" && !formData.transactionId.trim()) {
-      setError("Please enter the bKash Transaction ID (TrxID)");
+    if ((formData.paymentMethod === "BKASH" || formData.paymentMethod === "BANK") && !formData.transactionId.trim()) {
+      setError(`Please enter the ${formData.paymentMethod === "BKASH" ? "bKash Transaction ID (TrxID)" : "Bank Reference / Transaction ID"}`);
       return;
     }
 
@@ -104,7 +104,7 @@ export default function CheckoutPage() {
         shippingAddress: formData.shippingAddress,
         orderNotes: formData.orderNotes,
         paymentMethod: formData.paymentMethod,
-        transactionId: formData.paymentMethod === "BKASH" ? formData.transactionId : undefined,
+        transactionId: (formData.paymentMethod === "BKASH" || formData.paymentMethod === "BANK") ? formData.transactionId : undefined,
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -267,10 +267,11 @@ export default function CheckoutPage() {
 
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Payment Method</label>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 {[
                   { id: "COD", label: "Cash on Delivery" },
                   { id: "BKASH", label: "bKash Payment" },
+                  { id: "BANK", label: "Bank Transfer" },
                 ].map((method) => (
                   <label
                     key={method.id}
@@ -294,18 +295,21 @@ export default function CheckoutPage() {
               </div>
 
               {formData.paymentMethod === "BKASH" && (
-                <div className="p-4 rounded-xl bg-pink-50 border border-pink-200 space-y-3 mt-3">
-                  <div className="text-xs text-pink-900 font-medium leading-relaxed">
-                    <p className="font-bold mb-1">📱 bKash Merchant / Personal Number:</p>
-                    <p className="font-mono text-sm font-bold bg-white px-3 py-1.5 rounded border border-pink-200 w-fit">
-                      01712-345678 (Personal / Send Money)
+                <div className="p-5 rounded-2xl bg-white border border-black/15 shadow-xs space-y-4 mt-3">
+                  <div className="text-xs text-ink/80 font-medium leading-relaxed">
+                    <p className="font-bold text-ink mb-1.5 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-brand"></span>
+                      bKash Merchant / Personal Number:
                     </p>
-                    <p className="mt-2">
-                      Please send <span className="font-bold">{formatPrice(totalAmount)}</span> to this bKash number using 'Send Money', then enter your Transaction ID (TrxID) below.
+                    <div className="font-mono text-sm font-bold bg-gray-50 px-3.5 py-2 rounded-xl border border-black/10 text-brand w-fit">
+                      01712-345678 (Personal / Send Money)
+                    </div>
+                    <p className="mt-2.5 text-muted">
+                      Please send <span className="font-bold text-ink">{formatPrice(totalAmount)}</span> to this bKash number using 'Send Money', then enter your Transaction ID (TrxID) below.
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-pink-900 mb-1">Transaction ID (TrxID) *</label>
+                    <label className="block text-xs font-bold text-ink mb-1.5">Transaction ID (TrxID) *</label>
                     <input
                       type="text"
                       name="transactionId"
@@ -313,7 +317,40 @@ export default function CheckoutPage() {
                       value={formData.transactionId}
                       onChange={handleChange}
                       placeholder="e.g. 9H74K82L1M"
-                      className="w-full border border-pink-300 rounded-lg p-2.5 text-sm font-mono bg-white focus:outline-none focus:border-brand uppercase"
+                      className="w-full border border-black/20 rounded-xl p-3 text-sm font-mono bg-white focus:outline-none focus:border-brand text-ink uppercase"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.paymentMethod === "BANK" && (
+                <div className="p-5 rounded-2xl bg-white border border-black/15 shadow-xs space-y-4 mt-3">
+                  <div className="text-xs text-ink/80 font-medium leading-relaxed">
+                    <p className="font-bold text-ink mb-1.5 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-brand"></span>
+                      Bank Account Information:
+                    </p>
+                    <div className="bg-gray-50 p-3.5 rounded-xl border border-black/10 space-y-1 font-mono text-xs text-ink/90">
+                      <p><span className="font-semibold text-muted">Bank Name:</span> Eastern Bank PLC (EBL)</p>
+                      <p><span className="font-semibold text-muted">Account Name:</span> JH Shoe Gallery</p>
+                      <p><span className="font-semibold text-muted">Account Number:</span> 1234-5020-0012-3456</p>
+                      <p><span className="font-semibold text-muted">Branch:</span> Gulshan Corporate Branch</p>
+                      <p><span className="font-semibold text-muted">Routing Number:</span> 058261234</p>
+                    </div>
+                    <p className="mt-2.5 text-muted">
+                      Please transfer <span className="font-bold text-ink">{formatPrice(totalAmount)}</span> to the bank account above, then enter your Bank Reference / Deposit Slip No. / Transaction ID below.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-ink mb-1.5">Bank Reference / Transaction ID *</label>
+                    <input
+                      type="text"
+                      name="transactionId"
+                      required={formData.paymentMethod === "BANK"}
+                      value={formData.transactionId}
+                      onChange={handleChange}
+                      placeholder="e.g. EBL-TRX-987654"
+                      className="w-full border border-black/20 rounded-xl p-3 text-sm font-mono bg-white focus:outline-none focus:border-brand text-ink uppercase"
                     />
                   </div>
                 </div>

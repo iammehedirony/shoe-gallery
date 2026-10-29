@@ -22,15 +22,17 @@ const calculateShipping = async (req, res, next) => {
 // @access  Public / Private (supports guest and logged-in users)
 const createOrder = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, shippingCity, shippingAddress, orderNotes, paymentMethod, transactionId, items } = req.body;
-    const userId = req.user?.id || null;
+    const { customerName, customerPhone, shippingCity, shippingAddress, orderNotes, paymentMethod, transactionId, items, userId: requestedUserId, paidAmount } = req.body;
+    const userId = (requestedUserId && typeof requestedUserId === 'string' && requestedUserId.trim() !== "") ? requestedUserId : (req.user?.id || null);
+    const cleanTransactionId = (transactionId && typeof transactionId === 'string' && transactionId.trim() !== "") ? transactionId.trim() : null;
+    const cleanOrderNotes = (orderNotes && typeof orderNotes === 'string' && orderNotes.trim() !== "") ? orderNotes.trim() : null;
 
     if (!items || items.length === 0) {
       throw ApiError.badRequest("No items provided in order");
     }
 
-    if (paymentMethod === "BKASH" && !transactionId) {
-      throw ApiError.badRequest("Transaction ID (TrxID) is required for bKash payment");
+    if ((paymentMethod === "BKASH" || paymentMethod === "BANK") && !transactionId) {
+      throw ApiError.badRequest(`Transaction ID / Reference Number is required for ${paymentMethod === "BKASH" ? "bKash" : "Bank"} payment`);
     }
 
     // Execute order placement inside a Prisma Interactive Transaction
@@ -91,14 +93,14 @@ const createOrder = async (req, res, next) => {
           customerPhone,
           shippingCity,
           shippingAddress,
-          orderNotes,
+          orderNotes: cleanOrderNotes,
           subtotal,
           shippingFee,
           discountTotal,
           totalAmount,
           paymentMethod: paymentMethod || "COD",
-          paymentStatus: paymentMethod === "COD" ? "UNPAID" : "PAID", // Assuming online payment is paid instantly
-          transactionId: paymentMethod === "BKASH" ? transactionId : null,
+          paymentStatus: (Number(paidAmount) >= Number(totalAmount) || paymentMethod === "BKASH" || paymentMethod === "BANK" || paymentMethod === "CASH") ? "PAID" : "UNPAID",
+          transactionId: cleanTransactionId,
           items: {
             create: orderItemsData,
           },

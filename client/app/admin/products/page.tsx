@@ -292,15 +292,15 @@ export default function ProductsPage() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
+    <div className="w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold">Products Management</h1>
           <p className="text-sm text-ink/60">Manage your store products, pricing, and inventory.</p>
         </div>
         <button 
           onClick={handleOpenAddModal}
-          className="bg-brand text-white px-6 py-2.5 rounded font-bold text-sm hover:opacity-95 transition shadow-sm"
+          className="bg-brand text-white px-6 py-2.5 rounded font-bold text-sm hover:opacity-95 transition shadow-sm w-full sm:w-auto"
         >
           + Add New Product
         </button>
@@ -321,11 +321,11 @@ export default function ProductsPage() {
           <table className="w-full text-left min-w-[700px]">
             <thead className="bg-gray-50 text-ink/70 border-b text-xs uppercase tracking-wider">
               <tr>
-                <th className="p-4">Image</th>
-                <th className="p-4">Title</th>
-                <th className="p-4">Price</th>
-                <th className="p-4">Stock</th>
-                <th className="p-4">Actions</th>
+                <th className="p-3 sm:p-4">Image</th>
+                <th className="p-3 sm:p-4">Title</th>
+                <th className="p-3 sm:p-4">Price</th>
+                <th className="p-3 sm:p-4">Stock</th>
+                <th className="p-3 sm:p-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
@@ -335,7 +335,7 @@ export default function ProductsPage() {
 
                 return (
                   <tr key={product.id || product._id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4 w-16">
+                    <td className="p-3 sm:p-4 w-16">
                       <div className="relative h-12 w-12 rounded overflow-hidden bg-gray-100 border border-black/5">
                         <Image 
                           src={imageUrl} 
@@ -345,17 +345,17 @@ export default function ProductsPage() {
                         />
                       </div>
                     </td>
-                    <td className="p-4 font-medium text-ink">
+                    <td className="p-3 sm:p-4 font-medium text-ink">
                       <div>{product.title}</div>
                       <div className="text-xs text-ink/50 font-mono">SKU: {product.sku || "N/A"}</div>
                     </td>
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4">
                       <div className="font-semibold text-brand">৳{Number(product.price).toLocaleString()}</div>
                       {product.oldPrice && Number(product.oldPrice) > Number(product.price) && (
                         <div className="text-xs text-ink/40 line-through">৳{Number(product.oldPrice).toLocaleString()}</div>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                         totalStock === 0 ? "bg-red-100 text-red-700" :
                         totalStock <= 5 ? "bg-orange-100 text-orange-700" :
@@ -364,8 +364,8 @@ export default function ProductsPage() {
                         {totalStock} in stock
                       </span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
+                    <td className="p-3 sm:p-4">
+                      <div className="flex items-center gap-2">
                         <button 
                           type="button"
                           onClick={() => handleOpenEditModal(product)}
@@ -403,89 +403,89 @@ export default function ProductsPage() {
 
       {/* Add / Edit Product Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="text-2xl font-bold">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-2xl font-bold text-ink/60 hover:text-ink">✕</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5 border-b pb-4">
+                <h2 className="text-xl sm:text-2xl font-bold">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-xl font-bold text-ink/60 hover:text-ink p-1">✕</button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="col-span-2">
-                  <label className="block mb-1.5 font-semibold text-sm">Product Title *</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Product Title *</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Premium Italian Leather Oxford" 
                     value={title}
                     onChange={e => setTitle(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand text-ink text-sm" 
                     required 
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Slug</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Slug</label>
                   <input 
                     type="text" 
                     value={slug}
                     onChange={e => setSlug(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand bg-gray-50 text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand bg-gray-50 text-ink text-sm" 
                     required 
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">SKU Code</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">SKU Code</label>
                   <input 
                     type="text" 
                     placeholder="e.g. JH-OXF-001" 
                     value={sku}
                     onChange={e => setSku(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand text-ink text-sm" 
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Regular Price (৳) *</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Regular Price (৳) *</label>
                   <input 
                     type="number" 
                     placeholder="e.g. 4500" 
                     value={price}
                     onChange={e => setPrice(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand text-ink text-sm" 
                     required 
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Compare / Old Price (৳)</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Compare / Old Price (৳)</label>
                   <input 
                     type="number" 
                     placeholder="e.g. 5500" 
                     value={oldPrice}
                     onChange={e => setOldPrice(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand text-ink text-sm" 
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Discount (%)</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Discount (%)</label>
                   <input 
                     type="number" 
                     placeholder="e.g. 15" 
                     value={discount}
                     onChange={e => setDiscount(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand text-ink" 
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand text-ink text-sm" 
                   />
                 </div>
 
                 {/* Database-backed Dynamic Badge Selection */}
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Badge</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Badge</label>
                   <select 
                     value={badge}
                     onChange={e => setBadge(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand bg-white text-ink"
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand bg-white text-ink text-sm"
                   >
                     {isLoadingMeta ? (
                       <option value="" className="text-ink bg-white">Loading badges...</option>
@@ -503,11 +503,11 @@ export default function ProductsPage() {
 
                 {/* Parent Category */}
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Parent Category *</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Parent Category *</label>
                   <select 
                     value={parentCategoryId}
                     onChange={e => setParentCategoryId(e.target.value)}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand bg-white text-ink"
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand bg-white text-ink text-sm"
                     required
                   >
                     <option value="" className="text-ink bg-white">{isLoadingMeta ? "Loading categories..." : "Select Category"}</option>
@@ -519,12 +519,12 @@ export default function ProductsPage() {
 
                 {/* Sub Category */}
                 <div>
-                  <label className="block mb-1.5 font-semibold text-sm">Sub-Category</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Sub-Category</label>
                   <select 
                     value={subCategoryId}
                     onChange={e => setSubCategoryId(e.target.value)}
                     disabled={!parentCategoryId || subCategories.length === 0}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand bg-white text-ink disabled:bg-gray-100 disabled:text-gray-400"
+                    className="border border-black/15 p-2.5 sm:p-3 rounded w-full outline-none focus:border-brand bg-white text-ink text-sm disabled:bg-gray-100 disabled:text-gray-400"
                   >
                     <option value="" className="text-ink bg-white">
                       {!parentCategoryId 
@@ -541,18 +541,18 @@ export default function ProductsPage() {
 
                 {/* Cloudinary Image Upload */}
                 <div className="col-span-2">
-                  <label className="block mb-1.5 font-semibold text-sm">Upload Product Images (Cloudinary)</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Upload Product Images (Cloudinary)</label>
                   <input 
                     type="file" 
                     multiple 
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="border border-black/15 p-3 rounded w-full outline-none focus:border-brand bg-white text-ink file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-brand file:text-white hover:file:opacity-90 cursor-pointer" 
+                    className="border border-black/15 p-2 sm:p-3 rounded w-full outline-none focus:border-brand bg-white text-ink text-xs sm:text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-brand file:text-white hover:file:opacity-90 cursor-pointer" 
                   />
                   {imagePreviews.length > 0 && (
-                    <div className="flex gap-3 mt-3 flex-wrap">
+                    <div className="flex gap-2 sm:gap-3 mt-3 flex-wrap">
                       {imagePreviews.map((src, idx) => (
-                        <div key={idx} className="relative h-16 w-16 rounded border overflow-hidden bg-gray-50">
+                        <div key={idx} className="relative h-14 w-14 sm:h-16 sm:w-16 rounded border overflow-hidden bg-gray-50">
                           <Image src={src} alt="Preview" fill className="object-cover" />
                         </div>
                       ))}
@@ -561,28 +561,28 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block mb-1.5 font-semibold text-sm">Description</label>
+                  <label className="block mb-1.5 font-semibold text-xs sm:text-sm">Description</label>
                   <textarea 
                     placeholder="Write product description..." 
                     value={description}
                     onChange={e => setDescription(e.target.value)}
-                    className="border border-black/15 p-3 rounded col-span-2 h-28 w-full outline-none focus:border-brand text-ink"
+                    className="border border-black/15 p-3 rounded col-span-2 h-24 sm:h-28 w-full outline-none focus:border-brand text-ink text-sm"
                   ></textarea>
                 </div>
                 
                 {/* Sizes & Stock */}
-                <div className="col-span-2 border border-black/10 p-4 rounded-lg bg-gray-50/50">
-                  <label className="block mb-2 font-semibold text-sm">Variant Sizes & Stock Quantity *</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="col-span-2 border border-black/10 p-3 sm:p-4 rounded-lg bg-gray-50/50">
+                  <label className="block mb-2 font-semibold text-xs sm:text-sm">Variant Sizes & Stock Quantity *</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     {AVAILABLE_SIZES.map(size => (
-                      <div key={size} className="bg-white p-2.5 rounded border border-black/10">
+                      <div key={size} className="bg-white p-2 sm:p-2.5 rounded border border-black/10">
                         <label className="text-xs font-bold text-ink/70 block mb-1">Size {size}</label>
                         <input 
                           type="number" 
                           min="0"
                           value={sizeStocks[size] ?? 0}
                           onChange={e => handleStockChange(size, parseInt(e.target.value) || 0)}
-                          className="border border-black/15 p-2 rounded w-full text-sm outline-none focus:border-brand text-ink"
+                          className="border border-black/15 p-1.5 sm:p-2 rounded w-full text-xs sm:text-sm outline-none focus:border-brand text-ink"
                         />
                       </div>
                     ))}
@@ -590,8 +590,8 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Flash Sale */}
-                <div className="col-span-2 flex flex-col sm:flex-row items-start sm:items-center gap-4 border border-black/10 p-4 rounded-lg bg-gray-50/50">
-                  <label className="flex items-center gap-2 font-semibold cursor-pointer text-sm">
+                <div className="col-span-2 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border border-black/10 p-3 sm:p-4 rounded-lg bg-gray-50/50">
+                  <label className="flex items-center gap-2 font-semibold cursor-pointer text-xs sm:text-sm">
                     <input 
                       type="checkbox" 
                       checked={isFlashSale}
@@ -607,7 +607,7 @@ export default function ProductsPage() {
                         type="datetime-local" 
                         value={flashSaleEndTime}
                         onChange={e => setFlashSaleEndTime(e.target.value)}
-                        className="border border-black/15 p-2 rounded w-full text-sm outline-none focus:border-brand bg-white text-ink" 
+                        className="border border-black/15 p-2 rounded w-full text-xs sm:text-sm outline-none focus:border-brand bg-white text-ink" 
                       />
                     </div>
                   )}
@@ -615,15 +615,15 @@ export default function ProductsPage() {
 
                 {/* Tags */}
                 <div className="col-span-2">
-                  <label className="block mb-2 font-semibold text-sm">Select Tags</label>
-                  <div className="flex flex-wrap gap-4">
+                  <label className="block mb-2 font-semibold text-xs sm:text-sm">Select Tags</label>
+                  <div className="flex flex-wrap gap-3 sm:gap-4">
                     {isLoadingMeta ? (
                       <p className="text-xs text-ink/60">Loading tags...</p>
                     ) : tags.length === 0 ? (
                       <p className="text-xs text-ink/50 italic">No tags found. You can add tags in the &quot;Tags & Badges&quot; section.</p>
                     ) : (
                       tags.map((tag: any) => (
-                        <label key={tag.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <label key={tag.id} className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
                           <input 
                             type="checkbox" 
                             checked={selectedTagIds.includes(tag.id)}
@@ -637,18 +637,18 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="col-span-2 flex justify-end gap-3 pt-4 border-t">
+                <div className="col-span-2 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 border border-black/20 rounded font-bold text-sm hover:bg-gray-50 transition"
+                    className="w-full sm:w-auto px-6 py-3 border border-black/20 rounded font-bold text-xs sm:text-sm hover:bg-gray-50 transition"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
                     disabled={createProductMutation.isPending || updateProductMutation.isPending || isUploading}
-                    className="bg-brand text-white font-bold px-8 py-3 rounded text-sm transition hover:opacity-95 disabled:opacity-50 shadow-sm"
+                    className="w-full sm:w-auto bg-brand text-white font-bold px-8 py-3 rounded text-xs sm:text-sm transition hover:opacity-95 disabled:opacity-50 shadow-sm"
                   >
                     {isUploading ? "UPLOADING IMAGES..." : (createProductMutation.isPending || updateProductMutation.isPending) ? (editingProductId ? "UPDATING..." : "CREATING...") : (editingProductId ? "UPDATE PRODUCT" : "UPLOAD PRODUCT")}
                   </button>

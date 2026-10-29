@@ -200,6 +200,8 @@ enum PaymentMethod {
   BKASH
   NAGAD
   CARD
+  BANK
+  CASH
 }
 
 enum PaymentStatus {
