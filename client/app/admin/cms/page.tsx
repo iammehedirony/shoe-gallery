@@ -30,6 +30,7 @@ export default function CMSPage() {
   const banners = bannersData || [];
   const heroBanners = banners.filter((b) => b.type === "HERO");
   const subBanners = banners.filter((b) => b.type === "SUB_BANNER");
+  const promoBanners = banners.filter((b) => b.type === "PROMO");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -272,6 +273,35 @@ export default function CMSPage() {
                   <div className="relative h-40 bg-gray-100 mb-4 rounded overflow-hidden border">
                     <Image src={banner.image} alt={banner.title} fill className="object-cover" />
                   </div>
+                </div>
+                <button 
+                  onClick={() => handleDeleteClick(banner.id, banner.title)}
+                  className="w-full bg-red-50 text-red-600 border border-red-200 py-2 rounded font-bold text-xs hover:bg-red-100 transition mt-2"
+                >
+                  Delete Banner
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Promo Banners */}
+      <div>
+        <h2 className="text-xl font-bold mb-6">Promo Banners / Popups ({promoBanners.length})</h2>
+        {promoBanners.length === 0 ? (
+          <p className="text-sm text-ink/50 italic bg-white p-6 rounded-lg border">No promo banners uploaded yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {promoBanners.map((banner) => (
+              <div key={banner.id} className="bg-white p-4 rounded-lg shadow-sm border border-black/10 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold mb-2 truncate">{banner.title}</h3>
+                  <div className="relative h-40 bg-gray-100 mb-4 rounded overflow-hidden border">
+                    <Image src={banner.image} alt={banner.title} fill className="object-cover" />
+                  </div>
+                  {banner.script && <p className="text-xs font-semibold text-brand mb-1">{banner.script}</p>}
+                  {banner.tagline && <p className="text-xs text-ink/60 mb-3">{banner.tagline}</p>}
                 </div>
                 <button 
                   onClick={() => handleDeleteClick(banner.id, banner.title)}

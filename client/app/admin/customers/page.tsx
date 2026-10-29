@@ -122,11 +122,11 @@ export default function CustomersPage() {
       
       {/* Add Customer Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
-            <div className="flex justify-between items-center mb-6 border-b pb-3">
-              <h2 className="text-xl font-bold">Register New Customer</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-xl font-bold">✕</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl w-full max-w-lg max-h-[95vh] overflow-y-auto my-auto">
+            <div className="flex justify-between items-center mb-4 sm:mb-6 border-b pb-3">
+              <h2 className="text-lg sm:text-xl font-bold">Register New Customer</h2>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-xl font-bold p-1">✕</button>
             </div>
             <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleAddCustomer}>
               <div className="col-span-2">
@@ -136,29 +136,29 @@ export default function CustomersPage() {
                   placeholder="e.g. John Doe" 
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                   required 
                 />
               </div>
-              <div>
+              <div className="col-span-1 md:col-span-1">
                 <label className="block text-xs font-semibold mb-1">Email Address *</label>
                 <input 
                   type="email" 
                   placeholder="e.g. john@example.com" 
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                   required 
                 />
               </div>
-              <div>
+              <div className="col-span-1 md:col-span-1">
                 <label className="block text-xs font-semibold mb-1">Phone Number</label>
                 <input 
                   type="tel" 
                   placeholder="e.g. 01700000000" 
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                 />
               </div>
               <div className="col-span-2">
@@ -168,13 +168,13 @@ export default function CustomersPage() {
                   placeholder="Secure password" 
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                   required 
                 />
               </div>
-              <div className="col-span-2 flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-5 py-2.5 border rounded font-bold text-sm">Cancel</button>
-                <button type="submit" disabled={createCustomerMutation.isPending} className="bg-brand text-white font-bold px-6 py-2.5 rounded text-sm disabled:opacity-50">
+              <div className="col-span-2 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 border rounded-xl font-bold text-xs sm:text-sm">Cancel</button>
+                <button type="submit" disabled={createCustomerMutation.isPending} className="w-full sm:w-auto bg-brand text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm disabled:opacity-50">
                   {createCustomerMutation.isPending ? "Registering..." : "Register Customer"}
                 </button>
               </div>
@@ -185,11 +185,11 @@ export default function CustomersPage() {
 
       {/* Edit Customer Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
-            <div className="flex justify-between items-center mb-6 border-b pb-3">
-              <h2 className="text-xl font-bold">Edit Customer</h2>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-xl font-bold">✕</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xl w-full max-w-lg max-h-[95vh] overflow-y-auto my-auto">
+            <div className="flex justify-between items-center mb-4 sm:mb-6 border-b pb-3">
+              <h2 className="text-lg sm:text-xl font-bold">Edit Customer</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-xl font-bold p-1">✕</button>
             </div>
             <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleEditCustomer}>
               <div className="col-span-2">
@@ -198,32 +198,32 @@ export default function CustomersPage() {
                   type="text" 
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                   required 
                 />
               </div>
-              <div>
+              <div className="col-span-1 md:col-span-1">
                 <label className="block text-xs font-semibold mb-1">Email Address *</label>
                 <input 
                   type="email" 
                   value={editEmail}
                   onChange={e => setEditEmail(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                   required 
                 />
               </div>
-              <div>
+              <div className="col-span-1 md:col-span-1">
                 <label className="block text-xs font-semibold mb-1">Phone Number</label>
                 <input 
                   type="tel" 
                   value={editPhone}
                   onChange={e => setEditPhone(e.target.value)}
-                  className="w-full border border-black/15 p-3 rounded text-ink outline-none focus:border-brand" 
+                  className="w-full border border-black/15 p-3 rounded-xl text-ink text-sm outline-none focus:border-brand" 
                 />
               </div>
-              <div className="col-span-2 flex justify-end gap-3 pt-3 border-t">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 border rounded font-bold text-sm">Cancel</button>
-                <button type="submit" disabled={updateCustomerMutation.isPending} className="bg-brand text-white font-bold px-6 py-2.5 rounded text-sm disabled:opacity-50">
+              <div className="col-span-2 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="w-full sm:w-auto px-5 py-2.5 border rounded-xl font-bold text-xs sm:text-sm">Cancel</button>
+                <button type="submit" disabled={updateCustomerMutation.isPending} className="w-full sm:w-auto bg-brand text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm disabled:opacity-50">
                   {updateCustomerMutation.isPending ? "Updating..." : "Update Customer"}
                 </button>
               </div>
